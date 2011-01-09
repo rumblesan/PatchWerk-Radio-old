@@ -34,7 +34,7 @@ class LoggingObj():
         
 class MasterPD(Pd):
         
-    def __init__(self, jackManager, comPort=30320, streamPort=30310):
+    def __init__(self, comPort=30320, streamPort=30310):
         self.patchName   = 'PD master patch name here'
         Pd.__init__(self, comPort, False, self.patchName)
         self.streamPort  = streamPort
@@ -43,9 +43,7 @@ class MasterPD(Pd):
         self.oldPatch    = 1
         self.fadeTime    = 10
         self.patches     = {}
-        self.jackManager = jackManager
         
-        self.jackManager.register_program(self)
         
     def streaming_control(self, streamStatus):
         pass
@@ -74,10 +72,8 @@ class MasterPD(Pd):
             self.activePatch = 2
             self.oldPatch    = 1
         #create new patch in the active patch slot
-        self.patches[self.activePatch] = PdPatch(self, self.jackManager self.activePatch, self.port)
+        self.patches[self.activePatch] = PdPatch(self, self.activePatch, self.port)
         
-        #register with jack
-        self.jackManager.register_program(self.patches[self.activePatch])
         
     def stop_old_patch(self):
         #stop old patch
@@ -98,19 +94,17 @@ class MasterPD(Pd):
 
 class PdPatch(Pd):
         
-    def __init__(self, master, jackManager, patchNum, basePort):
+    def __init__(self, master, patchNum, basePort):
         self.patchName   = 'function to randomly choose patch here'
         self.master      = master
         self.patchDir    = 'Patch Directory Here'
         comPort          = basePort + patchNum
         self.name        = 'patch' + patchNum
-        self.jackManager = jackManager
         Pd.__init__(self, comPort, False, self.patchName)
         
     def __del__(self):
-        self.jackManager.disconnect(self)
+        jackManager.disconnect_program(self.name)
         self.Exit
-        #might use this to kill jack connections
         
     def register_callbacks(self):
         pass
@@ -138,7 +132,6 @@ class ServerDaemon(Daemon):
         
         #create mixing/streaming patch
         masterPD = MasterPD()
-        
         #check that the master PD patch is OK
         if masterPD.Alive:
             pass
@@ -146,6 +139,9 @@ class ServerDaemon(Daemon):
         else:
             #PROBLEM HERE!! LOG IT!!
             exit(1)
+        jackManager.register_program(masterPD.name)
+        jackManager.get_ports(masterPD.name)
+        
         
         
         while True:
