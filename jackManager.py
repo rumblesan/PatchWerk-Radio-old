@@ -6,37 +6,38 @@ import sys
 from time import sleep
 import re
 
-class ProgramPorts():
+class JackProgram():
     def __init__(self):
-        self.inputs  = {}
-        self.outputs = {}
-
+        self.inputs         = {}
+        self.outputs        = {}
 
 
 class JackManagement():
     
-    def __init__(self):
+    def __init__(self, startup=True):
         
-        jackexe = "jackd"
-        args = [jackexe]
-        
-        args.append("-P")
-        args.append("70")
-        
-        args.append("-R")
-        args.append("-dalsa")
-        args.append("-dhw:0")
-        args.append("-r44100")
-        args.append("-p1024")
-        args.append("-n2")
-        
-        self.jack = Popen(args, stdin=None, stderr=PIPE, stdout=PIPE, close_fds=(sys.platform != "win32"))
-        
-        # give jack a bit of time to come up
-        sleep(1)
-        
-        self.programs    = {}
-        self.connections = {}
+        if startup:
+            jackexe = "jackd"
+            args = [jackexe]
+            
+            args.append("-P")
+            args.append("70")
+            
+            args.append("-R")
+            args.append("-dalsa")
+            args.append("-dhw:0")
+            args.append("-r44100")
+            args.append("-p1024")
+            args.append("-n2")
+            
+            self.jack = Popen(args, stdin=None, stderr=PIPE, stdout=PIPE, close_fds=(sys.platform != "win32"))
+            
+            # give jack a bit of time to come up
+            sleep(1)
+        else: self.jack = None
+
+        self.programNames    = {}
+        self.jackPrograms = {}
 
         self.portNum  = re.compile('.*?([0-9]+)$')
         
@@ -52,58 +53,59 @@ class JackManagement():
 
 
 
-    def get_connections(self,extras=None):
+    def get_jack_data(self,extras=None):
         #get a list of the current jack connections
         args = ["jack_lsp"]
         if extras != None:
             args.extend(extras)
         getList = Popen(args, stdin=None, stdout=PIPE, stderr=PIPE)
-        connections, errors = getList.communicate()
+        data, errors = getList.communicate()
         retVal = getList.wait()
         if retVal > 0:
             print errors
-        return connections.rstrip()
+        return data.rstrip()
         
     def register_program(self, programName):
         
-        if programName not in self.programs.keys():
-            connections = self.get_connections()
-            for info in connections.splitlines():
+        if programName not in self.programNames.keys():
+            jackData = self.get_jack_data()
+            for info in jackData.splitlines():
                 name, port = info.split(":")
-                if name not in self.programs.iteritems():
-                    self.programs[programName] = name
+                if name not in self.programNames.iteritems():
+                    self.programNames[programName] = name
+                    self.jackPrograms[name] = JackProgram()
                     break
         
-        return self.programs[programName]
+        return self.programNames[programName]
 
     def get_ports(self, programName):
-        jackName = self.programs[programName]
-        self.connections[jackName] = ProgramPorts()
+        jackName = self.programNames[programName]
 
-        connections = self.get_connections(["-p"])
-        connections = re.sub(r'\n\tproperties: ',':',connections)
-        for info in connections.splitlines():
+        jackData = self.get_jack_data(["-p"])
+        jackData = re.sub(r'\n\tproperties: ',':',jackData)
+        for info in jackData.splitlines():
             name, port, properties = info.split(":")
             if name == jackName:
                 inorout = properties.split(",").pop(0)
                 portNumber = self.portNum.search(port).group(1)
                 if inorout == "input":
-                    self.connections[jackName].inputs[portNumber] = port
+                    self.jackPrograms[jackName].inputs[portNumber] = port
                 elif inorout == "output":
-                    self.connections[jackName].outputs[portNumber] = port
+                    self.jackPrograms[jackName].outputs[portNumber] = port
 
-        inNum  = len(self.connections[jackName].inputs)
-        outNum = len(self.connections[jackName].outputs)
+        inNum  = len(self.jackPrograms[jackName].inputs)
+        outNum = len(self.jackPrograms[jackName].outputs)
         return (inNum, outNum)
+
 
     def connect_programs(self, source, sourcePorts, sink, sinkPorts):
         
-        sourceProgram = self.programs[source]
-        sinkProgram   = self.programs[sink]
+        sourceProgram = self.programNames[source]
+        sinkProgram   = self.programNames[sink]
 
         for outNum, inNum in zip(sourcePorts, sinkPorts):
-            outPort = self.connections[sourceProgram].inputs[outNum]
-            inPort  = self.connections[sinkProgram].inputs[inNum]
+            outPort = self.jackPrograms[sourceProgram].inputs[outNum]
+            inPort  = self.jackPrograms[sinkProgram].inputs[inNum]
 
         
     def connect_ports(self, sourceProgram, sourcePort, sinkProgram, sinkPort):
@@ -117,21 +119,34 @@ class JackManagement():
         return 0
         
         
-    def disconnect_program(self, program):
+    def disconnect_program(self, programName):
+        jackName = self.programNames[programName]
+        jackData = self.get_jack_data(["-c"])
+        jackData = re.sub(r'\n   ',',',jackData)
+        for info in jackData.splitlines():
+            data = info.split(",")
+            progData = data.pop(0)
+            name, port = progData.split(":")
+            if name == jackName:
+                for connection in data:
+                    retval = self._disconnect(progData,connection)
+                    
+    def _disconnect(self, port1, port2):
         args = ["jack_disconnect"]
-        args.append(sourceProgram + ":" + sourcePort)
-        args.append(sinkProgram + ":" + sinkPort)
+        args.append(port1)
+        args.append(port2)
 
-        connect = Popen(args, stdin=None, stdout=PIPE, stderr=PIPE)
-        retVal = connect.wait()
-        return 0
+        disconnect = Popen(args, stdin=None, stdout=PIPE, stderr=PIPE)
+        retVal = disconnect.wait()
+        return retVal
 
 
 def _test():
-    jackManager = JackManagement()
+    jackManager = JackManagement(False)
     print jackManager.Alive()
     print jackManager.register_program("master")
     print jackManager.get_ports("master")
+    print jackManager.disconnect_program("master")
     del(jackManager)
 
 if __name__ == "__main__":
