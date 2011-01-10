@@ -3,19 +3,22 @@
 #Import Modules
 import os
 import sys
-import threading
 import time
 import shutil
+import random
 from daemon import Daemon
 from Pd import Pd
 from subprocess import Popen, PIPE
 
+logFile = '/var/log/droneServer.log'
+pidFile = '/var/run/droneServer.pid'
+patchDir = ''
+
 class LoggingObj():
 
     def __init__(self):
-        self.logFile     = os.path.join('/var/log/droneServer.log')
+        self.logFile     = os.path.join(logFile)
         self.fileHandle  = open(self.logFile, 'w')
-        self.logFileLock = threading.Lock()
         self.foreground  = 0
 
     def writeLine(self, logLine):
@@ -36,22 +39,25 @@ class MasterPD(Pd):
         
     def __init__(self, comPort=30320, streamPort=30310):
         self.patchName   = 'PD master patch name here'
-        Pd.__init__(self, comPort, False, self.patchName)
         self.streamPort  = streamPort
         self.name        = 'masterPD'
         self.activePatch = 2
         self.oldPatch    = 1
         self.fadeTime    = 10
         self.patches     = {}
+        self.playTime    = 600
+        self.portList    = {1:[1,2], 2:[3,4]}
+        sendCmd          = "stream port " + str(self.streamPort)
+        Pd.__init__(self, comPort, False, self.patchName, cmd=sendCmd)
         
         
     def streaming_control(self, streamStatus):
-        pass
-        #self.pdProgram.message('streaming streamStatus')
+        message = "stream " + streamStatus
+        self.pdProgram.Send('streaming streamStatus')
         
     def channel_fade(self):
         #fade across to new active patch
-        message = 'fade %i' % self.activePatch
+        message = 'fade ' + str(self.activePatch) + " " + str(self.fadeTime)
         self.Send(message)
         
     def pause(self, pauseLength):
@@ -61,61 +67,51 @@ class MasterPD(Pd):
             for number, subPatch in self.patches.items()
                 if subPatch.Alive()
                     subPatch.Update()
-
+    
     def create_new_patch(self):
-        
-        #change active patch number
-        if self.activePatch == 2:
-            self.activePatch = 1
-            self.oldPatch    = 2
-        else:
-            self.activePatch = 2
-            self.oldPatch    = 1
+        #get a random patch from the patch folder
+        patchPath = self.get_random_patch()
         #create new patch in the active patch slot
-        self.patches[self.activePatch] = PdPatch(self, self.activePatch, self.port)
-        
+        self.patches[self.activePatch] = PdPatch(self.activePatch, self.port, patchPath)
+        #give PD some time to come up ok
+        self.pause(5)
+        #register the new patch with jack
+        newPatch = self.patches[self.activePatch].name
+        jackManager.register_program(newPatch)
+        #get the ports for the new program
+        jackManager.get_ports(newPatch)
+        #run disconnect incase its auto connected to the system IOs
+        jackManager.disconnect_program(newPatch)
+        #now connect the new patch to the master
+        jackManager.connect_programs(newPatch, [1,2], self.name,self.portList[self.activePatch])
+    
+    def get_random_patch(self):
+        patchList = os.listdir(patchDir)
+        patch = random.choose(patchList)
         
     def stop_old_patch(self):
         #stop old patch
         if self.patches[self.oldPatch].Alive():
-        del(self.patches[self.oldPatch])
+            jackManager.disconnect_program(self.patches[self.oldPatch].name)
+            del(self.patches[self.oldPatch])
     
     def switch_patch(self):
         if self.activePatch == 1:
             self.activePatch = 2
             self.oldPatch    = 1
-            
         elif self.activePatch == 2:
             self.activePatch = 1
             self.oldPatch    = 2
-            
-            
-        
+    
 
 class PdPatch(Pd):
         
-    def __init__(self, master, patchNum, basePort):
-        self.patchName   = 'function to randomly choose patch here'
-        self.master      = master
-        self.patchDir    = 'Patch Directory Here'
-        comPort          = basePort + patchNum
+    def __init__(self, patchNum, basePort, patch):
+        self.patchName   = patch
+        self.port        = basePort + patchNum
         self.name        = 'patch' + patchNum
-        Pd.__init__(self, comPort, False, self.patchName)
-        
-    def __del__(self):
-        jackManager.disconnect_program(self.name)
-        self.Exit
-        
-    def register_callbacks(self):
-        pass
-        #self.pdProgram.message('streaming streamStatus')
-        
-    def message_pd(self, message):
-        pass
-        #self.pdProgram.message('message')
+        Pd.__init__(self, self.port, False, self.patchName, open=self.patchName)
 
-    def choose_patch(self):
-        pass
         
 class ServerDaemon(Daemon):
     
@@ -129,7 +125,16 @@ class ServerDaemon(Daemon):
         
         #create jack connection management object
         jackManager = JackManagement()
-        
+        if jackManager.Alive:
+            pass
+            #put something in the logFile
+        else:
+            #PROBLEM HERE!! LOG IT!!
+            exit(1)
+        jackManager.register_program("system")
+        jackManager.get_ports("system")
+        jackManager.disconnect_program("system")
+
         #create mixing/streaming patch
         masterPD = MasterPD()
         #check that the master PD patch is OK
@@ -141,8 +146,10 @@ class ServerDaemon(Daemon):
             exit(1)
         jackManager.register_program(masterPD.name)
         jackManager.get_ports(masterPD.name)
-        
-        
+        jackManager.disconnect_program(masterPD.name)
+
+        #start streaming
+        masterPD.streaming_control("go")
         
         while True:
             #switch which patch is active
@@ -150,17 +157,20 @@ class ServerDaemon(Daemon):
             
             #tell master PD to create the new patch
             masterPD.create_new_patch()
+
+            #fade over to new patch
+            masterPD.channel_fade()
             
             #kill off old copy of PD which will auto disconnect from jack
             masterPD.stop_old_patch()
                 
             #sleep for 10 minutes, untill next patch needs to be loaded
-            masterPD.pause(600)
+            masterPD.pause(self.playTime)
             
             
 if __name__ == "__main__":
 
-    daemon = ServerDaemon('/var/run/droneServer.pid')
+    daemon = ServerDaemon(pidFile)
     
     if len(sys.argv) == 2:
         if 'start' == sys.argv[1]:
