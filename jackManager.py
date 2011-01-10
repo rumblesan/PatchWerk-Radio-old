@@ -53,7 +53,7 @@ class JackManagement():
 
 
 
-    def get_jack_data(self,extras=None):
+    def _get_jack_data(self,extras=None):
         #get a list of the current jack connections
         args = ["jack_lsp"]
         if extras != None:
@@ -68,20 +68,20 @@ class JackManagement():
     def register_program(self, programName):
         
         if programName not in self.programNames.keys():
-            jackData = self.get_jack_data()
+            jackData = self._get_jack_data()
             for info in jackData.splitlines():
                 name, port = info.split(":")
                 if name not in self.programNames.iteritems():
                     self.programNames[programName] = name
                     self.jackPrograms[name] = JackProgram()
                     break
-        
+                    
         return self.programNames[programName]
 
     def get_ports(self, programName):
         jackName = self.programNames[programName]
 
-        jackData = self.get_jack_data(["-p"])
+        jackData = self._get_jack_data(["-p"])
         jackData = re.sub(r'\n\tproperties: ',':',jackData)
         for info in jackData.splitlines():
             name, port, properties = info.split(":")
@@ -98,22 +98,25 @@ class JackManagement():
         return (inNum, outNum)
 
 
-    def connect_programs(self, source, sourcePorts, sink, sinkPorts):
+    def connect_programs(self, sourceProgram, sourcePorts, sinkProgram, sinkPorts):
         
-        sourceProgram = self.programNames[source]
-        sinkProgram   = self.programNames[sink]
+        sourceJackName = self.programNames[sourceProgram]
+        sinkJackName   = self.programNames[sinkProgram]
 
         for outNum, inNum in zip(sourcePorts, sinkPorts):
-            outPort = self.jackPrograms[sourceProgram].inputs[outNum]
-            inPort  = self.jackPrograms[sinkProgram].inputs[inNum]
+            outPort = self.jackPrograms[sourceJackName].inputs[outNum]
+            inPort  = self.jackPrograms[sinkJackName].inputs[inNum]
+            sourceName = sourceJackName + ":" + outPort
+            sinkName   = sinkJackName + ":" + inPort
+            self._connect(sourceName, sinkName)
 
         
-    def connect_ports(self, sourceProgram, sourcePort, sinkProgram, sinkPort):
+    def _connect(self, sourcePort, sinkPort):
         
         args = ["jack_connect"]
-        args.append(sourceProgram + ":" + sourcePort)
-        args.append(sinkProgram + ":" + sinkPort)
-
+        args.append(sourcePort)
+        args.append(sinkPort)
+        
         connect = Popen(args, stdin=None, stdout=PIPE, stderr=PIPE)
         retVal = connect.wait()
         return 0
@@ -121,7 +124,7 @@ class JackManagement():
         
     def disconnect_program(self, programName):
         jackName = self.programNames[programName]
-        jackData = self.get_jack_data(["-c"])
+        jackData = self._get_jack_data(["-c"])
         jackData = re.sub(r'\n   ',',',jackData)
         for info in jackData.splitlines():
             data = info.split(",")
@@ -131,10 +134,10 @@ class JackManagement():
                 for connection in data:
                     retval = self._disconnect(progData,connection)
                     
-    def _disconnect(self, port1, port2):
+    def _disconnect(self, sourcePort, sinkPort):
         args = ["jack_disconnect"]
-        args.append(port1)
-        args.append(port2)
+        args.append(sourcePort)
+        args.append(sinkPort)
 
         disconnect = Popen(args, stdin=None, stdout=PIPE, stderr=PIPE)
         retVal = disconnect.wait()
