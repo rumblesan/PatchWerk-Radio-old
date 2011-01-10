@@ -195,6 +195,9 @@ class Pd:
 		self._map = {}
 		self._pdComs = PdComs(self, localaddr=("127.0.0.1", port), map=self._map)
 	
+    def __del__(self):
+        self.Exit()
+    
 	def Update(self):
 		poll(map=self._map)
 		stdin = self.pd.recv()
@@ -279,4 +282,3 @@ def _test():
 
 if __name__ == "__main__":
 	_test()
-
