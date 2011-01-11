@@ -3,12 +3,13 @@
 #Import Modules
 import os
 import sys
-import time
+from time import time, sleep
 import shutil
 import random
-from daemon import Daemon
 from Pd import Pd
+from daemon import Daemon
 from subprocess import Popen, PIPE
+from jackManager import JackManagement
 
 logFile = '/var/log/droneServer.log'
 pidFile = '/var/run/droneServer.pid'
@@ -19,7 +20,7 @@ class LoggingObj():
     def __init__(self):
         self.logFile     = os.path.join(logFile)
         self.fileHandle  = open(self.logFile, 'w')
-        self.foreground  = 0
+        self.foreground  = 1
 
     def writeLine(self, logLine):
         output = self.timeStamp() + '  ' + str(logLine) + '\n'
@@ -38,7 +39,7 @@ class LoggingObj():
 class MasterPD(Pd):
         
     def __init__(self, comPort=30320, streamPort=30310):
-        self.patchName   = 'PD master patch name here'
+        self.patchName   = 'masterPatch.pd'
         self.streamPort  = streamPort
         self.name        = 'masterPD'
         self.activePatch = 2
@@ -47,13 +48,17 @@ class MasterPD(Pd):
         self.patches     = {}
         self.playTime    = 600
         self.portList    = {1:[1,2], 2:[3,4]}
-        sendCmd          = "stream port " + str(self.streamPort)
-        Pd.__init__(self, comPort, False, self.patchName, cmd=sendCmd)
+
+        sendCmd = "stream port " + str(self.streamPort)
+
+        extras = "-jack -inchannels 4"
+        
+        Pd.__init__(self, comPort, False, self.patchName, extra=extras)
         
         
     def streaming_control(self, streamStatus):
         message = "stream " + streamStatus
-        self.pdProgram.Send('streaming streamStatus')
+        self.Send('streaming streamStatus')
         
     def channel_fade(self):
         #fade across to new active patch
@@ -63,9 +68,9 @@ class MasterPD(Pd):
     def pause(self, pauseLength):
         start = time()
         while time() - start < pauseLength:
-		    self.Update()
-            for number, subPatch in self.patches.items()
-                if subPatch.Alive()
+            self.Update()
+            for number, subPatch in self.patches.items():
+                if subPatch.Alive():
                     subPatch.Update()
     
     def create_new_patch(self):
@@ -86,14 +91,17 @@ class MasterPD(Pd):
         jackManager.connect_programs(newPatch, [1,2], self.name,self.portList[self.activePatch])
     
     def get_random_patch(self):
-        patchList = os.listdir(patchDir)
-        patch = random.choose(patchList)
+        return 'test1.pd'
+        #patchList = os.listdir(patchDir)
+        #patch = random.choose(patchList)
         
     def stop_old_patch(self):
         #stop old patch
-        if self.patches[self.oldPatch].Alive():
-            jackManager.disconnect_program(self.patches[self.oldPatch].name)
-            del(self.patches[self.oldPatch])
+        return 0
+        if self.patches[self.oldPatch] is not None:
+            if self.patches[self.oldPatch].Alive():
+                jackManager.disconnect_program(self.patches[self.oldPatch].name)
+                del(self.patches[self.oldPatch])
     
     def switch_patch(self):
         if self.activePatch == 1:
@@ -109,23 +117,27 @@ class PdPatch(Pd):
     def __init__(self, patchNum, basePort, patch):
         self.patchName   = patch
         self.port        = basePort + patchNum
-        self.name        = 'patch' + patchNum
-        Pd.__init__(self, self.port, False, self.patchName, open=self.patchName)
+        self.name        = 'patch' + str(patchNum)
+        extras = "-jack"
+        Pd.__init__(self, self.port, False, self.patchName, extra=extras)
 
         
 class ServerDaemon(Daemon):
     
     def run(self):
         
-        LogFile = LoggingObj()
+        #LogFile = LoggingObj()
         
-        LogFile.writeLine('\n\n')
-        LogFile.writeLine('Radio Drone Starting Up')
-        LogFile.writeLine('')
+        #LogFile.writeLine('\n\n')
+        #LogFile.writeLine('Radio Drone Starting Up')
+        #LogFile.writeLine('')
         
+        global jackManager
+
         #create jack connection management object
         jackManager = JackManagement()
         if jackManager.Alive:
+            print "Jack is ok"
             pass
             #put something in the logFile
         else:
@@ -153,7 +165,7 @@ class ServerDaemon(Daemon):
         
         while True:
             #switch which patch is active
-            masterPD.switchPatch()
+            masterPD.switch_patch()
             
             #tell master PD to create the new patch
             masterPD.create_new_patch()
@@ -165,7 +177,7 @@ class ServerDaemon(Daemon):
             masterPD.stop_old_patch()
                 
             #sleep for 10 minutes, untill next patch needs to be loaded
-            masterPD.pause(self.playTime)
+            masterPD.pause(masterPD.playTime)
             
             
 if __name__ == "__main__":
@@ -176,7 +188,6 @@ if __name__ == "__main__":
         if 'start' == sys.argv[1]:
             daemon.start()
         elif 'foreground' == sys.argv[1]:
-            LogFile.foreground = 1
             daemon.run()
         elif 'stop' == sys.argv[1]:
             daemon.stop()
