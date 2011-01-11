@@ -16,7 +16,7 @@ class JackManagement():
     #does all the interfacing with jack
     #will startup the jack daemon if required
     #interfacing is all done via the command line binaries
-    def __init__(self, startup=True):
+    def __init__(self, startup=True, debug=False):
         
         #will start up the jack daemon if needed but doesn't have to
         if startup:
@@ -42,6 +42,9 @@ class JackManagement():
         else:
             self.jack = None
         
+        #set debug value
+        #will cause command arguments to be printed out as they are run
+        self.debug = debug
         #programNames holds a dictionary of the jackNames, keyed by the given program names
         self.programNames    = {}
         #jack programs holds a dictionary of JackProgram objects keyed by the jackNames
@@ -74,6 +77,10 @@ class JackManagement():
         #extras are used to add further command line arguments
         if extras != None:
             args.extend(extras)
+            
+        if self.debug:
+            print args
+            
         #rewrite this to use the python2.7 Popen helper methods
         getList = Popen(args, stdin=None, stdout=PIPE, stderr=PIPE)
         data, errors = getList.communicate()
@@ -162,6 +169,9 @@ class JackManagement():
         args.append(sourcePort)
         args.append(sinkPort)
         
+        if self.debug:
+            print args
+            
         #should rewrite this with the python 2.7 Popen lib helper functions
         connect = Popen(args, stdin=None, stdout=PIPE, stderr=PIPE)
         retVal = connect.wait()
@@ -195,6 +205,9 @@ class JackManagement():
         args.append(sourcePort)
         args.append(sinkPort)
         
+        if self.debug:
+            print args
+            
         #should rewrite this with the python 2.7 Popen lib helper functions
         disconnect = Popen(args, stdin=None, stdout=PIPE, stderr=PIPE)
         retVal = disconnect.wait()
@@ -209,7 +222,7 @@ def _test():
     #gets port number
     #disconnects all system ports
     #deletes jackManager object
-    jackManager = JackManagement(False)
+    jackManager = JackManagement(debug=True)
     print jackManager.Alive()
     print jackManager.register_program("master")
     print jackManager.get_ports("master")
