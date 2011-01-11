@@ -138,7 +138,7 @@ class Pd:
         >>> pd.Exit()
     """
     errorCallbacks = {}
-    def __init__(self, port=30321, nogui=True, open="python-interface-help.pd", cmd=None, path=["patches"], extra=None):
+    def __init__(self, port=30321, gui=True, open="python-interface-help.pd", cmd=None, path=["patches"], extra=None):
         """
         port - what port to connect to Pd on.
         nogui - boolean: whether to start Pd with or without a gui. Defaults to nogui=True
@@ -161,7 +161,7 @@ class Pd:
         
         args.append("-stderr")
         
-        if nogui:
+        if not gui:
             args.append("-nogui")
         
         if cmd:
