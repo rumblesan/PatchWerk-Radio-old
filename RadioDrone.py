@@ -3,10 +3,10 @@
 #Import Modules
 import os
 import sys
-from time import time, sleep
 import shutil
 import random
 from Pd import Pd
+from time import time, sleep
 from daemon import Daemon
 from subprocess import Popen, PIPE
 from jackManager import JackManagement
@@ -17,10 +17,11 @@ patchDir = ''
 
 class LoggingObj():
 
-    def __init__(self):
-        self.logFile     = os.path.join(logFile)
-        self.fileHandle  = open(self.logFile, 'w')
-        self.foreground  = 1
+    def __init__(self, foreground):
+        self.logFile    = os.path.join(logFile)
+        self.foreground = foreground
+        if not foreground:
+            self.fileHandle = open(self.logFile, 'w')
 
     def writeLine(self, logLine):
         output = self.timeStamp() + '  ' + str(logLine) + '\n'
@@ -35,10 +36,9 @@ class LoggingObj():
         
         
         
-        
 class MasterPD(Pd):
         
-    def __init__(self, comPort=30320, streamPort=30310):
+    def __init__(self, comPort=30320, streamPort=30310, foreground=False):
         self.patchName   = 'masterPatch.pd'
         self.streamPort  = streamPort
         self.name        = 'masterPD'
@@ -48,24 +48,31 @@ class MasterPD(Pd):
         self.patches     = {}
         self.playTime    = 600
         self.portList    = {1:[1,2], 2:[3,4]}
+        self.foreground  = foreground
 
         sendCmd = "stream port " + str(self.streamPort)
-
+        
+        gui = self.foreground
         extras = "-jack -inchannels 4"
         
-        Pd.__init__(self, comPort, False, self.patchName, extra=extras)
+        Pd.__init__(self, comPort, gui, self.patchName, extra=extras)
         
         
     def streaming_control(self, streamStatus):
-        message = "stream " + streamStatus
-        self.Send('streaming streamStatus')
+        #send a message to the streaming controls in the master patch
+        message = "stream control" + streamStatus
+        self.Send(message)
         
     def channel_fade(self):
         #fade across to new active patch
-        message = 'fade ' + str(self.activePatch) + " " + str(self.fadeTime)
+        message = 'fade ' + str(self.activePatch) + ' ' + str(self.fadeTime)
         self.Send(message)
+        pause(self.fadeTime)
         
     def pause(self, pauseLength):
+        #pause for a specified number of seconds
+        #will keep updating the master patch and sub patches
+        #so that network communication still works
         start = time()
         while time() - start < pauseLength:
             self.Update()
@@ -77,9 +84,10 @@ class MasterPD(Pd):
         #get a random patch from the patch folder
         patchPath = self.get_random_patch()
         #create new patch in the active patch slot
-        self.patches[self.activePatch] = PdPatch(self.activePatch, self.port, patchPath)
+        self.patches[self.activePatch] = PdPatch(self.activePatch, self.port, self.foreground, patchPath)
         #give PD some time to come up ok
-        self.pause(5)
+        self.pause(1)
+        
         #register the new patch with jack
         newPatch = self.patches[self.activePatch].name
         jackManager.register_program(newPatch)
@@ -91,12 +99,15 @@ class MasterPD(Pd):
         jackManager.connect_programs(newPatch, [1,2], self.name,self.portList[self.activePatch])
     
     def get_random_patch(self):
+        #get a random patch from the patch directory
+        #currently just returns the test patch
+        #will need to figure out how this is going to work
         return 'test1.pd'
         #patchList = os.listdir(patchDir)
         #patch = random.choose(patchList)
         
     def stop_old_patch(self):
-        #stop old patch
+        #disconnect old patch from master patch and then del the object
         return 0
         if self.patches[self.oldPatch] is not None:
             if self.patches[self.oldPatch].Alive():
@@ -104,6 +115,8 @@ class MasterPD(Pd):
                 del(self.patches[self.oldPatch])
     
     def switch_patch(self):
+        #change the active patch number
+        #real scrappy, needs to be neater
         if self.activePatch == 1:
             self.activePatch = 2
             self.oldPatch    = 1
@@ -114,23 +127,27 @@ class MasterPD(Pd):
 
 class PdPatch(Pd):
         
-    def __init__(self, patchNum, basePort, patch):
+    def __init__(self, patchNum, basePort, foreground, patch):
+        
         self.patchName   = patch
         self.port        = basePort + patchNum
         self.name        = 'patch' + str(patchNum)
+        
+        gui = foreground
         extras = "-jack"
-        Pd.__init__(self, self.port, False, self.patchName, extra=extras)
+        
+        Pd.__init__(self, self.port, gui, self.patchName, extra=extras)
 
         
 class ServerDaemon(Daemon):
     
-    def run(self):
+    def run(self, foreground=0):
         
-        #LogFile = LoggingObj()
+        LogFile = LoggingObj(foreground)
         
-        #LogFile.writeLine('\n\n')
-        #LogFile.writeLine('Radio Drone Starting Up')
-        #LogFile.writeLine('')
+        LogFile.writeLine('\n\n')
+        LogFile.writeLine('Radio Drone Starting Up')
+        LogFile.writeLine('')
         
         global jackManager
 
@@ -188,7 +205,7 @@ if __name__ == "__main__":
         if 'start' == sys.argv[1]:
             daemon.start()
         elif 'foreground' == sys.argv[1]:
-            daemon.run()
+            daemon.run(True)
         elif 'stop' == sys.argv[1]:
             daemon.stop()
         elif 'restart' == sys.argv[1]:
