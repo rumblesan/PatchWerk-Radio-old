@@ -91,16 +91,18 @@ class JackManagement():
         return data.rstrip()
         
     def register_program(self, programName):
+        if self.debug:
+            print "registering " + programName
         #register a program with the jack manager
         #needs to be called after each new program has been started
         
         #check that the program isn't already registered
-        if programName not in self.programNames.keys():
+        if programName not in self.programNames.values():
             jackData = self._get_jack_data()
             for info in jackData.splitlines():
                 name, port = info.split(":")
                 #check that the jackName is not already a registered program
-                if name not in self.programNames.iteritems():
+                if name not in self.programNames.values():
                     #create a new entry in the programNames dictionary
                     self.programNames[programName] = name
                     #create a new JackProgram object
@@ -110,6 +112,8 @@ class JackManagement():
         return self.programNames[programName]
 
     def get_ports(self, programName):
+        if self.debug:
+            print "getting ports for " + programName
         inportNumber  = 0
         outportNumber = 0
         #get a list of the input and output ports of the given program
@@ -131,15 +135,19 @@ class JackManagement():
                 if inorout == "input":
                     inportNumber += 1
                     self.jackPrograms[jackName].inputs[inportNumber] = port
+                    print port
                 elif inorout == "output":
                     outportNumber += 1
                     self.jackPrograms[jackName].outputs[outportNumber] = port
+                    print port
         
         #return a tuple with number of input and output ports
         return (inportNumber, outportNumber)
 
 
     def connect_programs(self, sourceProgram, sourcePorts, sinkProgram, sinkPorts):
+        if self.debug:
+            print "connecting " + sourceProgram + " " + sinkProgram
         #connect the specified port list of two programs together
         #ports are specified as list of port numbers, starting from 1
         
@@ -151,7 +159,7 @@ class JackManagement():
         
         #loop through the two port number lists
         for outNum, inNum in zip(sourcePorts, sinkPorts):
-            outPort = self.jackPrograms[sourceJackName].inputs[outNum]
+            outPort = self.jackPrograms[sourceJackName].outputs[outNum]
             inPort  = self.jackPrograms[sinkJackName].inputs[inNum]
             
             #create full port names
