@@ -6,7 +6,7 @@ import sys
 import shutil
 import random
 from Pd import Pd
-from time import time, sleep
+from time import time, sleep, strftime
 from daemon import Daemon
 from subprocess import Popen, PIPE
 from jackManager import JackManagement
@@ -25,13 +25,13 @@ class LoggingObj():
 
     def writeLine(self, logLine):
         output = self.timeStamp() + '  ' + str(logLine) + '\n'
-        if foreground:
+        if self.foreground:
             print output
         else:
             self.fileHandle.write(output)
     
     def timeStamp(self):
-        stamp = time.strftime("%Y%m%d-%H:%M:%S")
+        stamp = strftime("%Y%m%d-%H:%M:%S")
         return stamp
         
         
@@ -50,10 +50,8 @@ class MasterPD(Pd):
         self.portList    = {1:[1,2], 2:[3,4]}
         self.foreground  = foreground
 
-        sendCmd = "stream port " + str(self.streamPort)
-        
-        gui = self.foreground
-        extras = "-jack -inchannels 4"
+        gui              = self.foreground
+        extras           = "-jack -inchannels 4"
         
         Pd.__init__(self, comPort, gui, self.patchName, extra=extras)
         
@@ -67,7 +65,7 @@ class MasterPD(Pd):
         #fade across to new active patch
         message = 'fade ' + str(self.activePatch) + ' ' + str(self.fadeTime)
         self.Send(message)
-        pause(self.fadeTime)
+        self.pause(self.fadeTime)
         
     def pause(self, pauseLength):
         #pause for a specified number of seconds
@@ -129,19 +127,19 @@ class PdPatch(Pd):
         
     def __init__(self, patchNum, basePort, foreground, patch):
         
-        self.patchName   = patch
-        self.port        = basePort + patchNum
-        self.name        = 'patch' + str(patchNum)
+        self.patchName  = patch
+        port            = basePort + patchNum
+        self.name       = 'patch' + str(patchNum)
         
         gui = foreground
         extras = "-jack"
         
-        Pd.__init__(self, self.port, gui, self.patchName, extra=extras)
+        Pd.__init__(self, port, gui, self.patchName, extra=extras)
 
         
 class ServerDaemon(Daemon):
     
-    def run(self, foreground=0):
+    def run(self, foreground=False):
         
         LogFile = LoggingObj(foreground)
         
@@ -152,7 +150,7 @@ class ServerDaemon(Daemon):
         global jackManager
 
         #create jack connection management object
-        jackManager = JackManagement()
+        jackManager = JackManagement(debug=foreground)
         if jackManager.Alive:
             print "Jack is ok"
             pass
@@ -165,7 +163,8 @@ class ServerDaemon(Daemon):
         jackManager.disconnect_program("system")
 
         #create mixing/streaming patch
-        masterPD = MasterPD()
+        masterPD = MasterPD(foreground=foreground)
+        masterPD.pause(5)
         #check that the master PD patch is OK
         if masterPD.Alive:
             pass

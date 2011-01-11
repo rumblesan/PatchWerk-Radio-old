@@ -14,6 +14,7 @@ import asynchat
 import socket
 import select
 import re
+from time import sleep
 
 import select
 if hasattr(select, 'poll'):
@@ -164,14 +165,6 @@ class Pd:
         if not gui:
             args.append("-nogui")
         
-        if cmd:
-            args.append("-send")
-            args.append(cmd)
-        
-        args.append("-send")
-        portmessage = '"startup port %s"' % port
-        args.append(portmessage)
-        
         for p in path:
             args.append("-path")
             args.append(p)
@@ -182,13 +175,21 @@ class Pd:
         if open:
             args.append("-open")
             args.append(open)
+
+        args.append("-send")
+        sendCmd = "startup port " + str(port)
+        args.append(sendCmd)
         
-        print "COMMAND:", " ".join(args)
+        if cmd:
+            args.append(cmd)
+        
+        print " ".join(args)
+
         try:
             self.pd = Popen(args, stdin=None, stderr=PIPE, stdout=PIPE, close_fds=(sys.platform != "win32"))
         except OSError:
             raise PdException("Problem running `%s` from '%s'" % (pdexe, getcwd()))
-        
+
         if port:
             self.port = port
         
