@@ -1,16 +1,10 @@
 from time import time, sleep
 from os import path, getcwd
 from Pd import Pd
-import jack
-
-jack.attach('test')
-jack.activate()
-
-print jack.get_ports()
 
 start = time()
 # launching pd
-pd = Pd(nogui=False,open="python-interface-help.pd")
+pd = Pd(gui=True,open="python-interface-help.pd", cmd="startup port 30201")
 pd.Send(["test message", 1, 2, 3])
 
 def Pd_hello(self, message):
@@ -23,7 +17,6 @@ pd.Pd_hello = Pd_hello
 pd.Pd_this = Pd_this
 pd.Send([" this is a further test"])
 
-print jack.get_ports()
 
 sentexit = False
 # running a bunch of stuff for up to 20 seconds
