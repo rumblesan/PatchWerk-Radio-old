@@ -1,10 +1,23 @@
 #N canvas 1193 227 450 300 10;
 #X obj 92 117 osc~;
-#X msg 90 78 440;
-#X obj 91 51 loadbang;
+#X msg 92 78 440;
+#X obj 92 51 loadbang;
 #X obj 243 98 python-interface;
 #X obj 92 170 dac~;
+#X obj 336 135 tgl 15 0 empty empty empty 17 7 0 10 -262144 -1 -1 0
+1;
+#X obj 356 162 sel 1;
+#X msg 356 186 \; pd dsp 1;
+#X msg 283 162 status \$1;
+#X obj 283 186 s toPython;
+#X obj 243 72 r toPython;
 #X connect 0 0 4 0;
 #X connect 0 0 4 1;
 #X connect 1 0 0 0;
 #X connect 2 0 1 0;
+#X connect 3 1 5 0;
+#X connect 5 0 6 0;
+#X connect 5 0 8 0;
+#X connect 6 0 7 0;
+#X connect 8 0 9 0;
+#X connect 10 0 3 0;

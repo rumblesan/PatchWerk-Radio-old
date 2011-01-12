@@ -1,6 +1,6 @@
-#N canvas 975 293 760 554 10;
+#N canvas 428 217 760 554 10;
 #X obj 444 85 python-interface;
-#X obj 148 121 adc~ 1 2 3 4;
+#X obj 140 311 adc~ 1 2 3 4;
 #X obj 152 392 dac~;
 #X obj 80 138 line~;
 #X obj 249 143 line~;
@@ -21,18 +21,20 @@
 #X obj 164 223 *~;
 #X obj 210 223 *~;
 #X obj 246 222 *~;
-#X obj 446 60 r toPython;
-#X msg 554 139 status $;
-#X obj 555 168 s toPython;
-#X obj 551 111 tgl 15 0 empty empty empty 17 7 0 10 -262144 -1 -1 0
+#X obj 444 62 r toPython;
+#X obj 521 178 s toPython;
+#X obj 551 111 tgl 15 0 empty empty empty 17 7 0 10 -262144 -1 -1 1
 1;
 #X obj 444 118 route fade;
-#X connect 0 0 26 0;
-#X connect 0 1 25 0;
-#X connect 1 0 18 0;
-#X connect 1 1 19 0;
-#X connect 1 2 20 0;
-#X connect 1 3 21 0;
+#X msg 593 165 \; pd dsp 1;
+#X obj 593 141 sel 1;
+#X msg 521 152 status \$1;
+#X connect 0 0 25 0;
+#X connect 0 1 24 0;
+#X connect 1 0 2 0;
+#X connect 1 1 2 1;
+#X connect 1 2 2 0;
+#X connect 1 3 2 1;
 #X connect 3 0 19 1;
 #X connect 3 0 18 1;
 #X connect 4 0 20 1;
@@ -52,12 +54,10 @@
 #X connect 12 0 6 0;
 #X connect 13 0 8 0;
 #X connect 14 0 3 0;
-#X connect 15 0 4 1;
-#X connect 18 0 2 0;
-#X connect 19 0 2 1;
-#X connect 20 0 2 0;
-#X connect 21 0 2 1;
+#X connect 15 0 4 0;
 #X connect 22 0 0 0;
-#X connect 23 0 24 0;
-#X connect 25 0 23 0;
-#X connect 26 0 7 0;
+#X connect 24 0 28 0;
+#X connect 24 0 27 0;
+#X connect 25 0 7 0;
+#X connect 27 0 26 0;
+#X connect 28 0 23 0;
