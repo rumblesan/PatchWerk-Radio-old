@@ -46,7 +46,7 @@ class MasterPD(Pd):
         self.oldPatch    = 1
         self.fadeTime    = 10
         self.patches     = {}
-        self.playTime    = 600
+        self.playTime    = 30
         self.portList    = {1:[1,2], 2:[3,4]}
         self.foreground  = foreground
 
@@ -77,7 +77,7 @@ class MasterPD(Pd):
             for number, subPatch in self.patches.items():
                 if subPatch.Alive():
                     subPatch.Update()
-    
+        
     def create_new_patch(self):
         #get a random patch from the patch folder
         patchPath = self.get_random_patch()
@@ -95,7 +95,7 @@ class MasterPD(Pd):
         jackManager.disconnect_program(newPatch)
         #now connect the new patch to the master
         jackManager.connect_programs(newPatch, [1,2], self.name,self.portList[self.activePatch])
-    
+        
     def get_random_patch(self):
         #get a random patch from the patch directory
         #currently just returns the test patch
@@ -106,10 +106,11 @@ class MasterPD(Pd):
         
     def stop_old_patch(self):
         #disconnect old patch from master patch and then del the object
-        return 0
-        if self.patches[self.oldPatch] is not None:
+        print "************************************ old patch value " + str(self.oldPatch)
+        if self.oldPatch in self.patches.keys():
             if self.patches[self.oldPatch].Alive():
                 jackManager.disconnect_program(self.patches[self.oldPatch].name)
+                self.patches[self.oldPatch].Exit()
                 del(self.patches[self.oldPatch])
     
     def switch_patch(self):
@@ -150,7 +151,7 @@ class ServerDaemon(Daemon):
         global jackManager
 
         #create jack connection management object
-        jackManager = JackManagement(debug=foreground)
+        jackManager = JackManagement(debug=False)
         if jackManager.Alive:
             print "Jack is ok"
             pass
@@ -176,8 +177,10 @@ class ServerDaemon(Daemon):
         jackManager.get_ports(masterPD.name)
         jackManager.disconnect_program(masterPD.name)
 
+        jackManager.connect_programs(masterPD.name,[1,2],"system",[1,2])
+
         #start streaming
-        masterPD.streaming_control("go")
+        #masterPD.streaming_control("go")
         
         while True:
             #switch which patch is active
