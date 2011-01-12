@@ -177,8 +177,7 @@ class Pd:
             args.append(open)
 
         args.append("-send")
-        sendCmd = "startup port " + str(port)
-        args.append(sendCmd)
+        args.append("startup port " + str(port))
         
         if cmd:
             args.append(cmd)
@@ -189,16 +188,22 @@ class Pd:
             self.pd = Popen(args, stdin=None, stderr=PIPE, stdout=PIPE, close_fds=(sys.platform != "win32"))
         except OSError:
             raise PdException("Problem running `%s` from '%s'" % (pdexe, getcwd()))
-
-        if port:
-            self.port = port
         
-        self._map = {}
+        
+        self.port    = port
+        self._map    = {}
         self._pdComs = PdComs(self, localaddr=("127.0.0.1", port), map=self._map)
     
-    def __del__(self):
-        self.Exit()
+    #Internaly called functions
+    def Dead(self):
+        self.pd = None
+        self.PdDied()
     
+    def CheckStart(self, msg):
+        if "_Start() called" in msg:
+            self.PdStarted()
+    
+    #User callable functions
     def Update(self):
         poll(map=self._map)
         stdin = self.pd.recv()
@@ -216,43 +221,6 @@ class Pd:
         p.Send(["my", "test", "yay"])
         """
         self._pdComs.Send(msg)
-    
-    def PdMessage(self, data):
-        """
-        Override this method to receive messages from Pd.
-        """
-        print "untrapped message:", data
-    
-    def CheckStart(self, msg):
-        if "_Start() called" in msg:
-            self.PdStarted()
-    
-    def Error(self, error):
-        """
-        Override this to catch anything sent by Pd to stderr (e.g. [print] objects).
-        """
-        errors = error.split(" ")
-        method = getattr(self, 'Error_' + errors[0], None)
-        if method:
-            method(errors)
-        elif error in self.errorCallbacks:
-            self.errorCallbacks[error]()
-        else:
-            print 'untrapped stderr output: "' + error + '"'
-    
-    def Dead(self):
-        self.pd = None
-        self.PdDied()
-    
-    def PdStarted(self):
-        """ Override this to catch the definitive start of Pd. """
-        pass
-    
-    def PdDied(self):
-        """
-        Override this to catch the Pd subprocess exiting.
-        """
-        print "Pd died!"
     
     def Alive(self):
         """
@@ -276,7 +244,37 @@ class Pd:
                 kill(self.pd.pid, signal.SIGINT)
         if self.pd:
             self.pd.wait()
-
+    
+    #Functions to override
+    def PdMessage(self, data):
+        """
+        Override this method to receive messages from Pd.
+        """
+        print "untrapped message:", data
+    
+    def Error(self, error):
+        """
+        Override this to catch anything sent by Pd to stderr (e.g. [print] objects).
+        """
+        errors = error.split(" ")
+        method = getattr(self, 'Error_' + errors[0], None)
+        if method:
+            method(errors)
+        elif error in self.errorCallbacks:
+            self.errorCallbacks[error]()
+        else:
+            print 'untrapped stderr output: "' + error + '"'
+    
+    def PdStarted(self):
+        """ Override this to catch the definitive start of Pd. """
+        pass
+    
+    def PdDied(self):
+        """
+        Override this to catch the Pd subprocess exiting.
+        """
+        print "Pd died!"
+    
 def _test():
     import doctest
     doctest.testmod(optionflags=doctest.ELLIPSIS)
