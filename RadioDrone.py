@@ -123,6 +123,17 @@ class MasterPD(Pd):
             self.activePatch = 1
             self.oldPatch    = 2
     
+    def PdMessage(self, data):
+        logFile.log(self.name + " Message from PD:" + data)
+    
+    def Error(self, error):
+        logFile.log(self.name + " stderr from PD:" + error)
+    
+    def PdStarted(self):
+        logFile.log(self.name + " has started")
+    
+    def PdDied(self):
+        logFile.log(self.name + " has died")
 
 class PdPatch(Pd):
         
@@ -136,8 +147,19 @@ class PdPatch(Pd):
         extras = "-jack"
         
         Pd.__init__(self, port, gui, self.patchName, extra=extras)
-
-        
+    
+    def PdMessage(self, data):
+        logFile.log(self.name + " Message from PD:" + data)
+    
+    def Error(self, error):
+        logFile.log(self.name + " stderr from PD:" + error)
+    
+    def PdStarted(self):
+        logFile.log(self.name + " has started")
+    
+    def PdDied(self):
+        logFile.log(self.name + " has died")
+    
 class ServerDaemon(Daemon):
     
     def run(self, foreground=False):
