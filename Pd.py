@@ -183,7 +183,7 @@ class Pd:
         if cmd:
             args.append(cmd)
         
-        print " ".join(args)
+        self.argLine = " ".join(args)
 
         try:
             self.pd = Popen(args, stdin=None, stderr=PIPE, stdout=PIPE, close_fds=(sys.platform != "win32"))
