@@ -45,11 +45,12 @@ class MasterPD(Pd):
         self.oldPatch    = 1
         self.fadeTime    = 10
         self.patches     = {}
+        self.patchNames  = {}
         self.playTime    = 30
         self.foreground  = foreground
 
         gui              = self.foreground
-        extras           = "-jack -audiobuf 1024"
+        extras           = "-alsa"
         
         Pd.__init__(self, comPort, gui, self.patchName, extra=extras)
         
@@ -59,13 +60,17 @@ class MasterPD(Pd):
         message = [stream, control, streamStatus]
         self.Send(message)
         
-    def channel_fade(self):
+    def crossfade(self):
         #fade across to new active patch
-        message = ['fade', self.activePatch, self.fadeTime]
-        print message
-        self.Send(message)
-        pauseTime = self.fadeTime + 5
-        self.pause(pauseTime)
+        newPatch = 'patch' + str(self.activePatch)
+        oldPatch = 'patch' + str(self.oldPatch)
+
+        newmessage = [newPatch, 'volume', 1]
+        oldmessage = [oldPatch, 'volume', 0]
+
+        self.Send(newmessage)
+        self.Send(oldmessage)
+        self.pause(10)
         
     def pause(self, pauseLength):
         #pause for a specified number of seconds
@@ -78,23 +83,37 @@ class MasterPD(Pd):
         
     def create_new_patch(self):
         #get a random patch from the patch folder
-        patchPath = self.get_random_patch()
+        patchName, patchPath = self.get_random_patch()
+        self.patchNames[self.activePatch] = patchName
         #create new patch in the active patch slot
-        
-        #self.patches[self.activePatch].Send(['dsp', 1])
+        self.Send(['open', 'path', patchPath])
+        self.Send(['open', 'patch', patchName])
+        self.pause(1)
         
     def get_random_patch(self):
         #get a random patch from the patch directory
         #currently just returns the test patch
         #will need to figure out how this is going to work
-        return 'test1.pd'
+        fileName = 'test%i.pd' % self.activePatch
+        patchInfo = (fileName, '/home/guy/gitrepositories/Radio-PD/patches')
+        return patchInfo
         #patchList = os.listdir(patchDir)
         #patch = random.choose(patchList)
         
     def stop_old_patch(self):
         #disconnect old patch from master patch and then del the object
+        if self.oldPatch in self.patches.keys():
+            patchName = self.patchNames[self.oldPatch]
+            message = ['close', patchName]
+            self.Send(message)
+            del(self.patches[self.oldPatch])
         pass
     
+    def activate_patch(self):
+        patch = 'patch' + str(self.activePatch)
+        message = [patch, 'dsp', 1]
+        self.Send(message)
+
     def switch_patch(self):
         #change the active patch number
         #real scrappy, needs to be neater
@@ -105,11 +124,19 @@ class MasterPD(Pd):
             self.activePatch = 1
             self.oldPatch    = 2
    
+    def Pd_register(self, data):
+        patchNum = data[0]
+        logFile.log(self.name + " Registering:" + str(patchNum))
+        self.patches[self.activePatch] = patchNum
+        reg = 'reg' + str(self.activePatch)
+        message = [reg, patchNum]
+        self.Send(message)
+        
     def PdMessage(self, data):
-        logFile.log(self.name + " Message from PD:" + data)
+        logFile.log(self.name + " Message from PD:" + str(data))
     
     def Error(self, error):
-        logFile.log(self.name + " stderr from PD:" + error)
+        logFile.log(self.name + " stderr from PD:" + str(error))
     
     def PdStarted(self):
         logFile.log(self.name + " has started")
@@ -132,7 +159,7 @@ class ServerDaemon(Daemon):
 
         #create mixing/streaming patch
         masterPD = MasterPD(foreground=foreground)
-        masterPD.pause(5)
+        masterPD.pause(1)
         #check that the master PD patch is OK
         if masterPD.Alive:
             pass
@@ -153,8 +180,12 @@ class ServerDaemon(Daemon):
             #tell master PD to create the new patch
             masterPD.create_new_patch()
 
+            masterPD.pause(5)
+
+            masterPD.activate_patch()
+
             #fade over to new patch
-            masterPD.channel_fade()
+            masterPD.crossfade()
             
             #kill off old patch
             masterPD.stop_old_patch()
