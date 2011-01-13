@@ -33,7 +33,7 @@ class JackManagement():
             args.append("-dhw:0")
             args.append("-r44100")
             args.append("-p1024")
-            args.append("-n2")
+            args.append("-n16")
             
             self.jack = Popen(args, stdin=None, stderr=PIPE, stdout=PIPE, close_fds=(sys.platform != "win32"))
             
