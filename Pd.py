@@ -88,7 +88,7 @@ class PdComs(asynchat.async_chat):
         
         method = getattr(self._parent, 'Pd_' + data[0], None)
         if method:
-            method(self, data[1:])
+            method(data[1:])
         else:
             self._parent.PdMessage(data)
             
