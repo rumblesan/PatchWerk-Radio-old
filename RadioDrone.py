@@ -9,7 +9,6 @@ from Pd import Pd
 from time import time, sleep, strftime
 from daemon import Daemon
 from subprocess import Popen, PIPE
-from jackManager import JackManagement
 
 logFile = '/var/log/droneServer.log'
 pidFile = '/var/run/droneServer.pid'
@@ -47,11 +46,10 @@ class MasterPD(Pd):
         self.fadeTime    = 10
         self.patches     = {}
         self.playTime    = 30
-        self.portList    = {1:[1,2], 2:[3,4]}
         self.foreground  = foreground
 
         gui              = self.foreground
-        extras           = "-jack -inchannels 4 -audiobuf 4096"
+        extras           = "-jack -audiobuf 1024"
         
         Pd.__init__(self, comPort, gui, self.patchName, extra=extras)
         
@@ -77,29 +75,13 @@ class MasterPD(Pd):
         start = time()
         while time() - start < pauseLength:
             self.Update()
-            for number, subPatch in self.patches.items():
-                if subPatch.Alive():
-                    subPatch.Update()
         
     def create_new_patch(self):
         #get a random patch from the patch folder
         patchPath = self.get_random_patch()
         #create new patch in the active patch slot
-        self.patches[self.activePatch] = PdPatch(self.activePatch, self.port, self.foreground, patchPath)
-        #give PD some time to come up ok
-        self.pause(1)
         
-        #register the new patch with jack
-        newPatch = self.patches[self.activePatch].name
-        jackManager.register_program(newPatch)
-        #get the ports for the new program
-        jackManager.get_ports(newPatch)
-        #run disconnect incase its auto connected to the system IOs
-        jackManager.disconnect_program(newPatch)
-        #now connect the new patch to the master
-        jackManager.connect_programs(newPatch, [1,2], self.name,self.portList[self.activePatch])
-        self.pause(1)
-        self.patches[self.activePatch].Send(['dsp', 1])
+        #self.patches[self.activePatch].Send(['dsp', 1])
         
     def get_random_patch(self):
         #get a random patch from the patch directory
@@ -111,15 +93,7 @@ class MasterPD(Pd):
         
     def stop_old_patch(self):
         #disconnect old patch from master patch and then del the object
-        print "************************************ old patch value " + str(self.oldPatch)
-        if self.oldPatch in self.patches.keys():
-            if self.patches[self.oldPatch].Alive():
-                self.patches[self.oldPatch].Send(['dsp', 0])
-                self.pause(1)
-                jackManager.disconnect_program(self.patches[self.oldPatch].name)
-                self.pause(1)
-                self.patches[self.oldPatch].Exit()
-                del(self.patches[self.oldPatch])
+        pass
     
     def switch_patch(self):
         #change the active patch number
@@ -131,32 +105,19 @@ class MasterPD(Pd):
             self.activePatch = 1
             self.oldPatch    = 2
    
-    #def PdMessage(self, data):
-    #    logFile.log(self.name + " Message from PD:" + data)
-   # 
-   # def Error(self, error):
-   #     logFile.log(self.name + " stderr from PD:" + error)
-   # 
-   # def PdStarted(self):
-   #     logFile.log(self.name + " has started")
-   # 
-   # def PdDied(self):
-   #     logFile.log(self.name + " has died")
-
-class PdPatch(Pd):
-        
-    def __init__(self, patchNum, basePort, foreground, patch):
-        
-        self.patchName  = patch
-        port            = basePort + patchNum
-        self.name       = 'patch' + str(patchNum)
-        
-        gui = foreground
-        extras = "-jack -audiobuf 4096"
-        
-        Pd.__init__(self, port, gui, self.patchName, extra=extras)
+    def PdMessage(self, data):
+        logFile.log(self.name + " Message from PD:" + data)
     
+    def Error(self, error):
+        logFile.log(self.name + " stderr from PD:" + error)
+    
+    def PdStarted(self):
+        logFile.log(self.name + " has started")
+    
+    def PdDied(self):
+        logFile.log(self.name + " has died")
 
+        
 class ServerDaemon(Daemon):
     
     def run(self, foreground=False):
@@ -167,21 +128,7 @@ class ServerDaemon(Daemon):
         logFile.log('Radio Drone Starting Up')
         logFile.log('')
         
-        global jackManager
         global logFile
-
-        #create jack connection management object
-        jackManager = JackManagement(debug=foreground)
-        if jackManager.Alive:
-            print "Jack is ok"
-            pass
-            #put something in the logFile
-        else:
-            #PROBLEM HERE!! LOG IT!!
-            exit(1)
-        jackManager.register_program("system")
-        jackManager.get_ports("system")
-        jackManager.disconnect_program("system")
 
         #create mixing/streaming patch
         masterPD = MasterPD(foreground=foreground)
@@ -193,11 +140,6 @@ class ServerDaemon(Daemon):
         else:
             #PROBLEM HERE!! LOG IT!!
             exit(1)
-        jackManager.register_program(masterPD.name)
-        jackManager.get_ports(masterPD.name)
-        jackManager.disconnect_program(masterPD.name)
-
-        jackManager.connect_programs(masterPD.name,[1,2],"system",[1,2])
 
         masterPD.Send(['dsp', 1])
 
@@ -214,7 +156,7 @@ class ServerDaemon(Daemon):
             #fade over to new patch
             masterPD.channel_fade()
             
-            #kill off old copy of PD which will auto disconnect from jack
+            #kill off old patch
             masterPD.stop_old_patch()
                 
             #sleep for 10 minutes, untill next patch needs to be loaded
