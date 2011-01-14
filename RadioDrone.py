@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python
 
 #Import Modules
@@ -24,29 +23,40 @@ class LoggingObj():
             self.fileHandle = open(self.logFile, 'w')
 
     def log(self, logLine):
-        output = self.timeStamp() + '  ' + str(logLine) + '\n'
+        output = "%s    %s" % (self.timeStamp(), logLine)
         if self.foreground:
             print output
         else:
-            self.fileHandle.log(output)
+            self.fileHandle.write(output)
     
     def timeStamp(self):
         stamp = strftime("%Y%m%d-%H:%M:%S")
         return stamp
-        
-        
-        
+    
+
+class SubPatch():
+    #Class for holding information about sub patches
+    
+    def __init__(self, number):
+        self.name   = "patch%i" % number
+        self.patch  = ""
+        self.patch  = ""
+        self.pdNum  = 0
+        self.ok     = False
+    
+
 class PureData(Pd):
         
     def __init__(self, comPort=30320, streamPort=30310, debug=False):
         self.patchName   = 'masterPatch.pd'
         self.streamPort  = streamPort
         
-        self.activePatch = 2
-        self.oldPatch    = 1
+        self.active      = 2
+        self.old         = 1
         
         self.patches     = {}
-        self.patchNames  = {}
+        self.patches[1]  = SubPatch(1)
+        self.patches[2]  = SubPatch(2)
         
         self.playTime    = 30
         self.debug       = debug
@@ -76,73 +86,92 @@ class PureData(Pd):
     def switch_patch(self):
         #change the active patch number
         #real scrappy, needs to be neater
-        if self.activePatch == 1:
-            self.activePatch = 2
-            self.oldPatch    = 1
-        elif self.activePatch == 2:
-            self.activePatch = 1
-            self.oldPatch    = 2
+        if self.active == 1:
+            self.active = 2
+            self.old    = 1
+        elif self.active == 2:
+            self.active = 1
+            self.old    = 2
+        name = "patch%i" % self.active
+        logFile.log("Changing active patch to be %s" % name)
     
     def create_new_patch(self):
         #get a random patch from the patch folder
-        patchName, patchPath = self.get_random_patch()
-        self.patchNames[self.activePatch] = patchName
-        #create new patch in the active patch slot
-        logFile.log("Opening new patch: %s in %s" % (patchName, patchPath)
-        self.Send(['open', 'path', patchPath])
-        self.Send(['open', 'patch', patchName])
+        patch, path = self.get_random_patch()
+        
+        name = self.patches[self.active].name
+        logFile.log("Loading new patch for %s" % name)
+        
+        #update patch object in active slot
+        self.patches[self.active].patch = patch
+        self.patches[self.active].path  = path
+        
+        logFile.log("New Patch - %s in %s" % (patch, path)
+        self.Send(['open', 'patch', patch])
+        self.Send(['open', 'path', path])
         self.pause(1)
     
     def get_random_patch(self):
         #get a random patch from the patch directory
         #currently just returns the test patch
         #will need to figure out how this is going to work
-        fileName = 'test%i.pd' % self.activePatch
-        patchInfo = (fileName, '/home/guy/gitrepositories/Radio-PD/patches')
-        return patchInfo
+        
         #patchList = os.listdir(patchDir)
         #patch = random.choose(patchList)
+        
+        fileName = 'test%i.pd' % self.active
+        patchInfo = (fileName, '/home/guy/gitrepositories/Radio-PD/patches')
+        return patchInfo
     
     def activate_patch(self):
-        patch = 'patch' + str(self.activePatch)
-        logFile.log("Turning on DSP in %s" % patch)
-        message = [patch, 'dsp', 1]
+        name = self.patches[self.active].name
+        logFile.log("Turning on DSP in %s" % name)
+        message = [name, 'dsp', 1]
         self.Send(message)
     
     def crossfade(self):
         #fade across to new active patch
-        newPatch = 'patch%i' % self.activePatch
-        oldPatch = 'patch%i' % self.oldPatch
-        logFile.log("Fading over to %s" % patch)
+        newName = self.patches[self.active].name
+        oldName = self.patches[self.old].name
+        logFile.log("Fading over to %s" % newName)
         
-        newmessage = [newPatch, 'volume', 1]
-        oldmessage = [oldPatch, 'volume', 0]
+        message = [newName, 'volume', 1]
+        self.Send(message)
         
-        self.Send(newmessage)
-        self.Send(oldmessage)
+        message = [oldName, 'volume', 0]
+        self.Send(message)
         
         self.pause(10)
     
     def kill_old_patch(self):
         #disconnect old patch from master patch and then del the object
-        if self.oldPatch in self.patches.keys():
-            patch = self.patchNames[self.oldPatch]
-            logFile.log("Stopping %s" % patch)
-            message = [patch, 'dsp', 0]
+        name  = self.patches[self.old].name
+        if self.patches[self.old].ok:
+            patch = self.patches[self.old].patch
+            logFile.log("Stopping %s" % name)
+            
+            message = [name, 'dsp', 0]
             self.Send(message)
             self.pause(1)
-            message = ['close', patchName]
+            
+            message = ['close', patch]
             self.Send(message)
-            del(self.patches[self.oldPatch])
-        pass
+            self.patches[self.old].ok = False
+        else:
+            logFile.log("%s doesn't seem to be running currently" % name)
     
     def Pd_register(self, data):
-        patchNum = data[0]
-        patchName = 'patch%i' % self.activePatch
-        logFile.log(" Registering number %i to %s" % (patchNum, patchName))
-        self.patches[self.activePatch] = patchNum
-        reg = 'reg%i' % self.activePatch
-        message = [reg, patchNum]
+        #Gets the unique number from the PD subPatch
+        #This is sent to the Master Patch to change send and receieve
+        #   objects so that the two can communicate
+        pdNum = data[0]
+        self.patches[self.active].pdNum = pdNum
+        self.patches[self.active].ok    = True
+        name  = self.patches[self.active].name
+        logFile.log(" Registering number %i to %s" % (pdNum, name))
+        
+        reg = 'reg%i' % self.active
+        message = [reg, pdNum]
         self.Send(message)
     
     def PdMessage(self, data):
