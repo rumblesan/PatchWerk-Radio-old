@@ -200,10 +200,10 @@ class PureData(Pd):
         self.regWait = False
     
     def PdMessage(self, data):
-        logFile.log("Message from PD:" + str(data))
+        logFile.log("Message from PD:%s" % str(data))
     
     def Error(self, error):
-        logFile.log("stderr from PD:" + str(error))
+        logFile.log("stderr from PD:%s" % str(error))
     
     def PdStarted(self):
         logFile.log("PD has started")
@@ -211,6 +211,8 @@ class PureData(Pd):
     def PdDied(self):
         logFile.log("PD has died")
     
+    def ComError(self, data)
+        logFile.log("Communication error :%s" % str(error))
 
 class ServerDaemon(Daemon):
     
