@@ -60,6 +60,8 @@ class PureData(Pd):
         
         self.playTime    = 30
         self.debug       = debug
+        
+        self.regWait     = False
 
         gui              = self.debug
         extras           = "-alsa"
@@ -109,7 +111,9 @@ class PureData(Pd):
         logFile.log("New Patch - %s in %s" % (patch, path)
         self.Send(['open', 'patch', patch])
         self.Send(['open', 'path', path])
-        self.pause(1)
+        
+        #change regWait to true. We will wait untill the patch is registered
+        self.regWait = True
     
     def get_random_patch(self):
         #get a random patch from the patch directory
@@ -173,6 +177,9 @@ class PureData(Pd):
         reg = 'reg%i' % self.active
         message = [reg, pdNum]
         self.Send(message)
+        
+        #set regWait to False. Patch is registered
+        self.regWait = False
     
     def PdMessage(self, data):
         logFile.log("Message from PD:" + str(data))
@@ -221,7 +228,8 @@ class ServerDaemon(Daemon):
             #tell master PD to create the new patch
             puredata.create_new_patch()
             
-            puredata.pause(5)
+            while puredata.regWait:
+                puredata.pause(1)
             
             puredata.activate_patch()
             
