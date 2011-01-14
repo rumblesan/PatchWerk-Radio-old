@@ -63,7 +63,8 @@ class PdComs(asynchat.async_chat):
         self.close()
     
     def handle_expt(self):
-        print 'PdSend: connection failed (win) or OOB data (linux)'
+        data = 'PdSend: connection failed (win) or OOB data (linux)'
+        self._parent.ComError(data)
         self.close()
         
     def handle_accept_server(self):
@@ -77,7 +78,8 @@ class PdComs(asynchat.async_chat):
             del self._serversocket
             self.set_socket(conn)
         else:
-            print "Dropped spurious PdReceive connect! socket:", self._socket, accepted
+            data = ("Dropped spurious PdReceive connect! socket:", self._socket, accepted)
+            self._parent.ComError(data)
     
     def collect_incoming_data(self, data):
         self._ibuffer += data
@@ -266,12 +268,20 @@ class Pd:
             print 'untrapped stderr output: "' + error + '"'
     
     def PdStarted(self):
-        """ Override this to catch the definitive start of Pd. """
-        pass
+        """
+        Override this to catch the definitive start of Pd.
+        """
+        print "Pd started!"
     
     def PdDied(self):
         """
         Override this to catch the Pd subprocess exiting.
+        """
+        print "Pd died!"
+        
+    def ComError(self, data):
+        """
+        Override this to catch errors during communication with PD.
         """
         print "Pd died!"
     
