@@ -6,9 +6,8 @@ import sys
 import shutil
 import random
 from Pd import Pd
-from time import time, sleep, strftime
+from time import time, strftime
 from daemon import Daemon
-from subprocess import Popen, PIPE
 
 logFile = '/var/log/droneServer.log'
 pidFile = '/var/run/droneServer.pid'
@@ -58,10 +57,14 @@ class PureData(Pd):
         self.patches[1]  = SubPatch(1)
         self.patches[2]  = SubPatch(2)
         
+        self.fadeTime    = 10
+        
         self.playTime    = 30
         self.debug       = debug
         
         self.regWait     = False
+        self.regTimeout  = 20
+        self.loadError   = False
 
         gui              = self.debug
         extras           = "-alsa"
@@ -81,7 +84,7 @@ class PureData(Pd):
     
     def streaming_control(self, streamControl):
         #send a message to the streaming controls in the master patch
-        logFile.log("Streaming control, %s" % streamControl)
+        logFile.log("Streaming control, %i" % streamControl)
         message = ["stream", "control", streamControl]
         self.Send(message)
     
@@ -127,11 +130,25 @@ class PureData(Pd):
         patchInfo = (fileName, '/home/guy/gitrepositories/Radio-PD/patches')
         return patchInfo
     
+    def load_error():
+        #notifies when there has been an error loading a patch
+        patch = self.patches[self.active].patch
+        path  = self.patches[self.active].path
+        
+        logFile.log("***************************************")
+        logFile.log("Problem loading %s from %s" % (patch, path))
+        logFile.log("Unloading patch and starting again")
+        
+        message = ['close', patch]
+        self.Send(message)
+    
     def activate_patch(self):
+        #turn on DSP in new patch
         name = self.patches[self.active].name
         logFile.log("Turning on DSP in %s" % name)
         message = [name, 'dsp', 1]
         self.Send(message)
+        self.pause(1)
     
     def crossfade(self):
         #fade across to new active patch
@@ -145,7 +162,8 @@ class PureData(Pd):
         message = [oldName, 'volume', 0]
         self.Send(message)
         
-        self.pause(10)
+        #pause while the fade occours
+        self.pause(self.fadeTime)
     
     def kill_old_patch(self):
         #disconnect old patch from master patch and then del the object
@@ -204,43 +222,59 @@ class ServerDaemon(Daemon):
         logFile.log('Radio Drone Starting Up')
         logFile.log('')
         
+        #TODO: pass a reference to the logFile to the puredata Object
         global logFile
 
         #create mixing/streaming patch
         puredata = PureData(debug=foreground)
         puredata.pause(1)
-        #check that the master PD patch is OK
+        #check that pure data is running fine
         if puredata.Alive:
             logFile.log('PureData has started fine')
         else:
             logFile.log('Problem starting PureData')
-            exit(1)
-
+            sys.exit(2)
+        
+        #Turn on DSP for pure data
         puredata.Send(['dsp', 1])
         
         #start streaming
-        #puredata.streaming_control("go")
+        puredata.streaming_control(1)
         
         while True:
-            #switch which patch is active
-            puredata.switch_patch()
+            #switch which patch is active assuming not in error state
+            if not self.loadError:
+                puredata.switch_patch()
             
             #tell master PD to create the new patch
             puredata.create_new_patch()
             
+            #pause until the patch registers
+            #if it doesn't register in a certain time
+            #then we have a problem
+            errCount = 0
             while puredata.regWait:
                 puredata.pause(1)
+                errCount += 1
+                if errCount > puredata.regTimeout:
+                    self.loadError = True
+                    break
             
-            puredata.activate_patch()
-            
-            #fade over to new patch
-            puredata.crossfade()
-            
-            #kill off old patch
-            puredata.kill_old_patch()
-            
-            #sleep for 10 minutes, untill next patch needs to be loaded
-            puredata.pause(puredata.playTime)
+            if self.loadError:
+                #call function to deal with loading error
+                puredata.load_error()
+            else:
+                #turn the DSP in the new patch on
+                puredata.activate_patch()
+                
+                #fade over to new patch
+                puredata.crossfade()
+                
+                #kill off old patch
+                puredata.kill_old_patch()
+                
+                #pause untill next patch needs to be loaded
+                puredata.pause(puredata.playTime)
             
 
 if __name__ == "__main__":
