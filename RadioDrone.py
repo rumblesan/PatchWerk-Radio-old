@@ -71,7 +71,7 @@ class PureData(Pd):
         
         Pd.__init__(self, comPort, gui, self.patchName, extra=extras)
         
-        logFile.log(self.args)
+        logFile.log(self.argLine)
     
     def pause(self, pauseLength):
         #pause for a specified number of seconds
@@ -111,9 +111,9 @@ class PureData(Pd):
         self.patches[self.active].patch = patch
         self.patches[self.active].path  = path
         
-        logFile.log("New Patch - %s in %s" % (patch, path)
-        self.Send(['open', 'patch', patch])
+        logFile.log("New Patch - %s in %s" % (patch, path))
         self.Send(['open', 'path', path])
+        self.Send(['open', 'patch', patch])
         
         #change regWait to true. We will wait untill the patch is registered
         self.regWait = True
@@ -130,7 +130,7 @@ class PureData(Pd):
         patchInfo = (fileName, '/home/guy/gitrepositories/Radio-PD/patches')
         return patchInfo
     
-    def load_error():
+    def load_error(self):
         #notifies when there has been an error loading a patch
         patch = self.patches[self.active].patch
         path  = self.patches[self.active].path
@@ -190,7 +190,7 @@ class PureData(Pd):
         self.patches[self.active].pdNum = pdNum
         self.patches[self.active].ok    = True
         name  = self.patches[self.active].name
-        logFile.log(" Registering number %i to %s" % (pdNum, name))
+        logFile.log("Registering number %s to %s" % (pdNum, name))
         
         reg = 'reg%i' % self.active
         message = [reg, pdNum]
@@ -211,7 +211,7 @@ class PureData(Pd):
     def PdDied(self):
         logFile.log("PD has died")
     
-    def ComError(self, data)
+    def ComError(self, data):
         logFile.log("Communication error :%s" % str(error))
 
 class ServerDaemon(Daemon):
@@ -245,7 +245,7 @@ class ServerDaemon(Daemon):
         
         while True:
             #switch which patch is active assuming not in error state
-            if not self.loadError:
+            if not puredata.loadError:
                 puredata.switch_patch()
             
             #tell master PD to create the new patch
@@ -259,10 +259,10 @@ class ServerDaemon(Daemon):
                 puredata.pause(1)
                 errCount += 1
                 if errCount > puredata.regTimeout:
-                    self.loadError = True
+                    puredata.loadError = True
                     break
             
-            if self.loadError:
+            if puredata.loadError:
                 #call function to deal with loading error
                 puredata.load_error()
             else:
