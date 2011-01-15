@@ -65,6 +65,7 @@ class PureData(Pd):
         self.regWait     = False
         self.regTimeout  = 20
         self.loadError   = False
+        self.connection  = False
 
         gui              = self.debug
         extras           = "-alsa"
@@ -72,6 +73,14 @@ class PureData(Pd):
         Pd.__init__(self, comPort, gui, self.patchName, extra=extras)
         
         logFile.log(self.argLine)
+
+    def Pd_connection(self, data):
+        type = data[0]
+        val  = data[1]
+        if type == "status":
+            if val == "1":
+                logFile.log('Network connection to PD is up')
+                self.connection = True
     
     def pause(self, pauseLength):
         #pause for a specified number of seconds
@@ -218,6 +227,8 @@ class ServerDaemon(Daemon):
     
     def run(self, foreground=False):
         
+        global logFile
+
         logFile = LoggingObj(foreground)
         
         logFile.log('\n\n')
@@ -225,7 +236,6 @@ class ServerDaemon(Daemon):
         logFile.log('')
         
         #TODO: pass a reference to the logFile to the puredata Object
-        global logFile
 
         #create mixing/streaming patch
         puredata = PureData(debug=foreground)
@@ -236,7 +246,16 @@ class ServerDaemon(Daemon):
         else:
             logFile.log('Problem starting PureData')
             sys.exit(2)
-        
+
+        logFile.log('Waiting for PD to register the connection')
+        errorVal = 0
+        while not puredata.connection:
+            puredata.pause(1)
+            errorVal += 1
+            if errorVal > 20:
+                logFile.log('Problem connecting to PD')
+                sys.exit(2)
+
         #Turn on DSP for pure data
         puredata.Send(['dsp', 1])
         
