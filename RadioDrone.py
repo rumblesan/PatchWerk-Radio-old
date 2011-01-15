@@ -254,6 +254,7 @@ class ServerDaemon(Daemon):
             #pause until the patch registers
             #if it doesn't register in a certain time
             #then we have a problem
+            puredata.loadError = False
             errCount = 0
             while puredata.regWait:
                 puredata.pause(1)
