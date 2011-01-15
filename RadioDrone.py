@@ -9,9 +9,10 @@ from Pd import Pd
 from time import time, strftime
 from daemon import Daemon
 
-logFile = '/var/log/droneServer.log'
-pidFile = '/var/run/droneServer.pid'
-patchDir = ''
+logFile   = '/var/log/droneServer.log'
+pidFile   = '/var/run/droneServer.pid'
+patchDir  = './patches'
+masterDir = './master'
 
 class LoggingObj():
 
@@ -69,8 +70,10 @@ class PureData(Pd):
 
         gui              = self.debug
         extras           = "-alsa"
+
+        path             = [patchDir, masterDir]
         
-        Pd.__init__(self, comPort, gui, self.patchName, extra=extras)
+        Pd.__init__(self, comPort, gui, self.patchName, extra=extras, path=path)
         
         logFile.log(self.argLine)
 
@@ -135,8 +138,8 @@ class PureData(Pd):
         #patchList = os.listdir(patchDir)
         #patch = random.choose(patchList)
         
-        fileName = 'test%i.pd' % self.active
-        patchInfo = (fileName, '/home/guy/gitrepositories/Radio-PD/patches')
+        fileName = 'main-test%i.pd' % self.active
+        patchInfo = (fileName, '/home/guy/gitrepositories/Radio-PD/patches/test%i' % self.active)
         return patchInfo
     
     def load_error(self):
