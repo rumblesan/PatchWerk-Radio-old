@@ -185,13 +185,12 @@ class PureData(Pd):
     def crossfade(self):
         #fade across to new active patch
         newName = self.patches[self.active].name
-        oldName = self.patches[self.old].name
         logFile.log("Fading over to %s" % newName)
         
-        message = [newName, 'volume', 1]
+        message = ['volume', 'fade', self.fadeTime]
         self.Send(message)
         
-        message = [oldName, 'volume', 0]
+        message = ['volume', 'chan', self.active]
         self.Send(message)
         
         #pause while the fade occours
@@ -239,7 +238,10 @@ class PureData(Pd):
         logFile.log("Message from PD:%s" % str(data))
     
     def Error(self, error):
-        logFile.log("stderr from PD:%s" % str(error))
+        if error[0] == "print:":
+            logFile.log("PD print:%s" % str(error[1:]))
+        else:
+            logFile.log("stderr from PD:%s" % str(error))
     
     def PdStarted(self):
         logFile.log("PD has started")
