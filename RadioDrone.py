@@ -2,6 +2,7 @@
 
 #Import Modules
 import os
+import re
 import sys
 import shutil
 import random
@@ -23,7 +24,7 @@ class LoggingObj():
             self.fileHandle = open(self.logFile, 'w')
 
     def log(self, logLine):
-        output = "%s    %s" % (self.timeStamp(), logLine)
+        output = "%s  %s" % (self.timeStamp(), logLine)
         if self.foreground:
             print output
         else:
@@ -39,7 +40,6 @@ class SubPatch():
     
     def __init__(self, number):
         self.name   = "patch%i" % number
-        self.patch  = ""
         self.patch  = ""
         self.pdNum  = 0
         self.ok     = False
@@ -67,6 +67,8 @@ class PureData(Pd):
         self.regTimeout  = 20
         self.loadError   = False
         self.connection  = False
+
+        self.fileMatch   = re.compile("^main-.*?\.pd$")
 
         gui              = self.debug
         extras           = "-alsa"
@@ -134,12 +136,30 @@ class PureData(Pd):
         #get a random patch from the patch directory
         #currently just returns the test patch
         #will need to figure out how this is going to work
+
+        current = self.patches[self.old].patch
+        logFile.log("Active patch is %s" % current)
         
-        #patchList = os.listdir(patchDir)
-        #patch = random.choose(patchList)
+        found = False
+        while not found:
+            dirList = os.listdir(patchDir)
+            dataDir = os.path.join(patchDir, random.choice(dirList))
+            
+            fileList = os.listdir(dataDir)
+            for file in fileList:
+                if self.fileMatch.search(file):
+                    break
         
-        fileName = 'main-test%i.pd' % self.active
-        patchInfo = (fileName, '/home/guy/gitrepositories/Radio-PD/patches/test%i' % self.active)
+            logFile.log("Chosen %s as new patch" % file)
+            logFile.log("Check if %s is %s" % (file, current))
+            if file != current:
+                logFile.log("Is not the same as the old patch")
+                found = True
+            else:
+                logFile.log("%s is the same patch as the current one" % file)
+                logFile.log("Will search again")
+        
+        patchInfo = (file, dataDir)
         return patchInfo
     
     def load_error(self):
@@ -186,6 +206,10 @@ class PureData(Pd):
             
             message = [name, 'dsp', 0]
             self.Send(message)
+            
+            reg = 'reg%i' % self.old
+            self.Send([reg, 0])
+            
             self.pause(1)
             
             message = ['close', patch]
