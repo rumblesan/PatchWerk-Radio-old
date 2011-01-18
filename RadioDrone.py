@@ -306,7 +306,7 @@ class ServerDaemon(Daemon):
         #TODO: pass a reference to the logFile to the puredata Object
 
         #create mixing/streaming patch
-        puredata = PureData(debug=foreground)
+        puredata = PureData()
         puredata.pause(1)
         #check that pure data is running fine
         if puredata.Alive:
