@@ -103,7 +103,7 @@ class PureData(Pd):
         
             host       = 'localhost'
             streamport = '8000'
-            mount      = 'radio.mp3'
+            mount      = 'radio.ogg'
             hostInfo   = [host, mount, streamport]
             
             password   = 'testpassword'
