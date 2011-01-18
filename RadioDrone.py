@@ -14,6 +14,7 @@ logFile   = '/var/log/droneServer.log'
 pidFile   = '/var/run/droneServer.pid'
 patchDir  = './patches'
 masterDir = './master'
+streamOut = 1
 
 class LoggingObj():
 
@@ -96,11 +97,58 @@ class PureData(Pd):
         while time() - start < pauseLength:
             self.Update()
     
-    def streaming_control(self, streamControl):
+    def streaming_setup(self):
         #send a message to the streaming controls in the master patch
-        logFile.log("Streaming control, %i" % streamControl)
-        message = ["stream", "control", streamControl]
-        self.Send(message)
+        if streamOut:
+            host = 'localhost'
+            streamport = '8000'
+            hostInfo = [host, streamport]
+            
+            mount = 'radio.mp3'
+            
+            castType = 'icecast'
+            
+            password = 'sourcepass'
+            
+            name = 'mystream'
+            
+            sampleRate = '44100'
+            bitRate = '128'
+            mode = '1'
+            quality = '4'
+            settings = [sampleRate, bitRate, mode, quality]
+
+            logFile.log("Setting up stream")
+            message = ["stream", "output", streamOut]
+            self.Send(message)
+            
+            logFile.log("Cast Type is %s" % castType)
+            message = ["stream", "castType", castType]
+            self.Send(message)
+            
+            logFile.log("MountPoint is %s" % mount)
+            message = ["stream", "mountpoint", mount]
+            self.Send(message)
+            
+            logFile.log("HostInfo is %s" % str(hostInfo))
+            message = ["stream", "hostinfo", " ".join(hostInfo)]
+            self.Send(message)
+            
+            logFile.log("Password is %s" % password)
+            message = ["stream", "pass", password]
+            self.Send(message)
+            
+            logFile.log("Stream Info is %s" % str(settings))
+            message = ["stream", "settings", " ".join(settings)]
+            self.Send(message)
+            
+            logFile.log("Connecting")
+            message = ["stream", "connect", 1]
+            self.Send(message)
+            
+        else:
+            logFile.log("No streaming. Sound output via dac~")
+            
     
     def switch_patch(self):
         #change the active patch number
@@ -289,7 +337,7 @@ class ServerDaemon(Daemon):
         puredata.Send(['dsp', 1])
         
         #start streaming
-        puredata.streaming_control(1)
+        puredata.streaming_setup()
         
         while True:
             #switch which patch is active assuming not in error state
