@@ -100,43 +100,34 @@ class PureData(Pd):
     def streaming_setup(self):
         #send a message to the streaming controls in the master patch
         if streamOut:
-            host = 'localhost'
+        
+            host       = 'localhost'
             streamport = '8000'
-            hostInfo = [host, streamport]
+            mount      = 'radio.mp3'
+            hostInfo   = [host, mount, streamport]
             
-            mount = 'radio.mp3'
-            
-            castType = 'icecast'
-            
-            password = 'sourcepass'
-            
-            name = 'mystream'
+            password   = 'testpassword'
             
             sampleRate = '44100'
-            bitRate = '128'
-            mode = '1'
-            quality = '4'
-            settings = [sampleRate, bitRate, mode, quality]
+            channels   = '2'
+            maxBr      = '144'
+            nomBr      = '128'
+            minBr      = '96'
+            
+            settings   = [sampleRate, channels, maxBr, nomBr, minBr]
 
             logFile.log("Setting up stream")
             message = ["stream", "output", streamOut]
             self.Send(message)
             
-            logFile.log("Cast Type is %s" % castType)
-            message = ["stream", "castType", castType]
-            self.Send(message)
-            
-            logFile.log("MountPoint is %s" % mount)
-            message = ["stream", "mountpoint", mount]
+            logFile.log("Password is %s" % password)
+            message = ["stream", "password", password]
             self.Send(message)
             
             logFile.log("HostInfo is %s" % str(hostInfo))
             message = ["stream", "hostinfo", " ".join(hostInfo)]
             self.Send(message)
             
-            logFile.log("Password is %s" % password)
-            message = ["stream", "pass", password]
-            self.Send(message)
             
             logFile.log("Stream Info is %s" % str(settings))
             message = ["stream", "settings", " ".join(settings)]
