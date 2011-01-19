@@ -12,6 +12,7 @@ from daemon import Daemon
 
 logFile   = '/var/log/droneServer.log'
 pidFile   = '/var/run/droneServer.pid'
+cfgFile   = 'config.cfg'
 patchDir  = './patches'
 masterDir = './master'
 
@@ -34,7 +35,42 @@ class LoggingObj():
         stamp = strftime("%Y%m%d-%H:%M:%S")
         return stamp
     
-
+class Config():
+    #Class for loading and holding the config data
+    
+    def __init__(self, cfgFile):
+        cfgData = open(cfgFile)
+        
+        for line in cfgData:
+            line = line.rstrip()
+            param,val = line.split(':')
+            if param == 'host':
+                self.host = val
+            else param == 'port':
+                self.port = val
+            else param == 'mountPoint':
+                self.mount = val
+            else param == 'password':
+                self.password = val
+            else param == 'samplerate':
+                self.sRate = val
+            else param == 'channels':
+                self.chans = val
+            else param == 'maxBitrate':
+                self.maxBr = val
+            else param == 'nomBitrate':
+                self.nomBr = val
+            else param == 'minBitrate':
+                self.minBr = val
+            else param == 'fadeTime':
+                self.fade = val
+            else param == 'playTime':
+                self.play = val
+            else:
+                logFile.log("CFG ERROR: %s is not a known parameter" % param)
+            
+        paramFile.close()
+    
 class SubPatch():
     #Class for holding information about sub patches
     
@@ -50,6 +86,8 @@ class PureData(Pd):
     def __init__(self, comPort=30320, gui=False):
         self.patchName   = 'masterPatch.pd'
         
+        self.config      = Config(cfgFile)
+        
         self.active      = 2
         self.old         = 1
         
@@ -57,20 +95,20 @@ class PureData(Pd):
         self.patches[1]  = SubPatch(1)
         self.patches[2]  = SubPatch(2)
         
-        self.fadeTime    = 10
+        self.fadeTime    = self.config.fade
+        self.playTime    = self.config.play
         
-        self.playTime    = 30
         self.gui         = gui
         
         self.regWait     = False
         self.regTimeout  = 20
         self.loadError   = False
         self.connection  = False
-
+        
         self.fileMatch   = re.compile("^main-.*?\.pd$")
-
+        
         extras           = "-alsa"
-
+        
         path             = [patchDir, masterDir]
         
         Pd.__init__(self, comPort, self.gui, self.patchName, extra=extras, path=path)
@@ -97,22 +135,12 @@ class PureData(Pd):
     def streaming_setup(self):
         #send a message to the streaming controls in the master patch
         
-        host       = 'localhost'
-        streamport = '8000'
-        mount      = 'radio.ogg'
-        hostInfo   = [host, mount, streamport]
+        config     = self.config
         
-        password   = 'testpassword'
+        password   = config.password
+        hostInfo   = [config.host, config.mount, config.port]
+        settings   = [config.sRate, config.chans, config.maxBr, config.nomBr, config.minBr]
         
-        sampleRate = '44100'
-        channels   = '2'
-        maxBr      = '144'
-        nomBr      = '128'
-        minBr      = '96'
-        
-        settings   = [sampleRate, channels, maxBr, nomBr, minBr]
-        
-        logFile.log("Password is %s" % password)
         message = ["stream", "password", password]
         self.Send(message)
         
@@ -267,6 +295,8 @@ class PureData(Pd):
     def Error(self, error):
         if error[0] == "print:":
             logFile.log("PD print:%s" % str(error[1:]))
+        elif error[0] == "oggcast:":
+            logFile.log("OggCast:%s" % str(error[1:]))
         else:
             logFile.log("stderr from PD:%s" % str(error))
     
