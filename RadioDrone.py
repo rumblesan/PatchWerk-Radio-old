@@ -46,27 +46,27 @@ class Config():
             param,val = line.split(':')
             if param == 'host':
                 self.host = val
-            else param == 'streamport':
+            elif param == 'streamport':
                 self.strmPort = val
-            else param == 'comPort':
+            elif param == 'comPort':
                 self.comPort = val
-            else param == 'mountPoint':
+            elif param == 'mountPoint':
                 self.mount = val
-            else param == 'password':
+            elif param == 'password':
                 self.password = val
-            else param == 'samplerate':
+            elif param == 'samplerate':
                 self.sRate = val
-            else param == 'channels':
+            elif param == 'channels':
                 self.chans = val
-            else param == 'maxBitrate':
+            elif param == 'maxBitrate':
                 self.maxBr = val
-            else param == 'nomBitrate':
+            elif param == 'nomBitrate':
                 self.nomBr = val
-            else param == 'minBitrate':
+            elif param == 'minBitrate':
                 self.minBr = val
-            else param == 'fadeTime':
+            elif param == 'fadeTime':
                 self.fade = val
-            else param == 'playTime':
+            elif param == 'playTime':
                 self.play = val
             else:
                 logFile.log("CFG ERROR: %s is not a known parameter" % param)
