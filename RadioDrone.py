@@ -116,7 +116,24 @@ class PureData(Pd):
         Pd.__init__(self, self.config.comPort, self.gui, self.patchName, extra=extras, path=path)
         
         logFile.log(self.argLine)
-
+    
+    def check_alive(self):
+        if self.Alive:
+            logFile.log('PureData has started fine')
+        else:
+            logFile.log('Problem starting PureData')
+            sys.exit(2)
+    
+    def check_network(self):
+        logFile.log('Waiting for PD to register the connection')
+        wait = 0
+        while not self.connection:
+            self.pause(1)
+            wait += 1
+            if wait > 20:
+                logFile.log('Problem connecting to PD')
+                sys.exit(2)
+    
     def Pd_connection(self, data):
         type = data[0]
         val  = data[1]
@@ -172,9 +189,11 @@ class PureData(Pd):
         logFile.log("Changing active patch to be %s" % name)
     
     def create_new_patch(self):
+        
+        self.loadError = False
+        
         #get a random patch from the patch folder
         patch, path = self.get_random_patch()
-        
         name = self.patches[self.active].name
         logFile.log("Loading new patch for %s" % name)
         
@@ -188,6 +207,17 @@ class PureData(Pd):
         
         #change regWait to true. We will wait untill the patch is registered
         self.regWait = True
+        
+        #pause until the patch registers
+        #if it doesn't register in a certain time
+        #then we have a problem
+        errCount = 0
+        while self.regWait:
+            self.pause(1)
+            errCount += 1
+            if errCount > self.regTimeout:
+                self.loadError = True
+                break
     
     def get_random_patch(self):
         #get a random patch from the patch directory
@@ -328,22 +358,13 @@ class ServerDaemon(Daemon):
         #create mixing/streaming patch
         puredata = PureData()
         puredata.pause(1)
+        
         #check that pure data is running fine
-        if puredata.Alive:
-            logFile.log('PureData has started fine')
-        else:
-            logFile.log('Problem starting PureData')
-            sys.exit(2)
-
-        logFile.log('Waiting for PD to register the connection')
-        errorVal = 0
-        while not puredata.connection:
-            puredata.pause(1)
-            errorVal += 1
-            if errorVal > 20:
-                logFile.log('Problem connecting to PD')
-                sys.exit(2)
-
+        puredata.check_alive()
+        
+        #check that Python and PD are connected
+        puredata.check_network()
+        
         #Turn on DSP for pure data
         puredata.Send(['dsp', 1])
         
@@ -357,18 +378,6 @@ class ServerDaemon(Daemon):
             
             #tell master PD to create the new patch
             puredata.create_new_patch()
-            
-            #pause until the patch registers
-            #if it doesn't register in a certain time
-            #then we have a problem
-            puredata.loadError = False
-            errCount = 0
-            while puredata.regWait:
-                puredata.pause(1)
-                errCount += 1
-                if errCount > puredata.regTimeout:
-                    puredata.loadError = True
-                    break
             
             if puredata.loadError:
                 #call function to deal with loading error
