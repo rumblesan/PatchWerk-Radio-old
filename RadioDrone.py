@@ -71,7 +71,7 @@ class Config():
             else:
                 logFile.log("CFG ERROR: %s is not a known parameter" % param)
             
-        paramFile.close()
+        cfgData.close()
     
 class SubPatch():
     #Class for holding information about sub patches
@@ -100,6 +100,8 @@ class PureData(Pd):
         self.fadeTime    = int(self.config.fade)
         self.playTime    = int(self.config.play)
         
+        comPort          = int(self.config.comPort)
+        
         self.gui         = gui
         
         self.regWait     = False
@@ -113,7 +115,7 @@ class PureData(Pd):
         
         path             = [patchDir, masterDir]
         
-        Pd.__init__(self, self.config.comPort, self.gui, self.patchName, extra=extras, path=path)
+        Pd.__init__(self, comPort, self.gui, self.patchName, extra=extras, path=path)
         
         logFile.log(self.argLine)
     
@@ -327,7 +329,7 @@ class PureData(Pd):
     def Error(self, error):
         if error[0] == "print:":
             logFile.log("PD print:%s" % str(error[1:]))
-        elif error[0] == "oggcast:":
+        elif error[0] == "oggcast~:":
             logFile.log("OggCast:%s" % str(error[1:]))
         else:
             logFile.log("stderr from PD:%s" % str(error))
