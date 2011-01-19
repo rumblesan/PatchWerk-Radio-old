@@ -14,7 +14,6 @@ logFile   = '/var/log/droneServer.log'
 pidFile   = '/var/run/droneServer.pid'
 patchDir  = './patches'
 masterDir = './master'
-streamOut = 1
 
 class LoggingObj():
 
@@ -48,9 +47,8 @@ class SubPatch():
 
 class PureData(Pd):
         
-    def __init__(self, comPort=30320, streamPort=30310, debug=False):
+    def __init__(self, comPort=30320, gui=False):
         self.patchName   = 'masterPatch.pd'
-        self.streamPort  = streamPort
         
         self.active      = 2
         self.old         = 1
@@ -62,7 +60,7 @@ class PureData(Pd):
         self.fadeTime    = 10
         
         self.playTime    = 30
-        self.debug       = debug
+        self.gui         = gui
         
         self.regWait     = False
         self.regTimeout  = 20
@@ -71,12 +69,11 @@ class PureData(Pd):
 
         self.fileMatch   = re.compile("^main-.*?\.pd$")
 
-        gui              = self.debug
         extras           = "-alsa"
 
         path             = [patchDir, masterDir]
         
-        Pd.__init__(self, comPort, gui, self.patchName, extra=extras, path=path)
+        Pd.__init__(self, comPort, self.gui, self.patchName, extra=extras, path=path)
         
         logFile.log(self.argLine)
 
@@ -99,47 +96,38 @@ class PureData(Pd):
     
     def streaming_setup(self):
         #send a message to the streaming controls in the master patch
-        if streamOut:
         
-            host       = 'localhost'
-            streamport = '8000'
-            mount      = 'radio.ogg'
-            hostInfo   = [host, mount, streamport]
-            
-            password   = 'testpassword'
-            
-            sampleRate = '44100'
-            channels   = '2'
-            maxBr      = '144'
-            nomBr      = '128'
-            minBr      = '96'
-            
-            settings   = [sampleRate, channels, maxBr, nomBr, minBr]
-
-            logFile.log("Setting up stream")
-            message = ["stream", "output", streamOut]
-            self.Send(message)
-            
-            logFile.log("Password is %s" % password)
-            message = ["stream", "password", password]
-            self.Send(message)
-            
-            logFile.log("HostInfo is %s" % str(hostInfo))
-            message = ["stream", "hostinfo", " ".join(hostInfo)]
-            self.Send(message)
-            
-            
-            logFile.log("Stream Info is %s" % str(settings))
-            message = ["stream", "settings", " ".join(settings)]
-            self.Send(message)
-            
-            logFile.log("Connecting")
-            message = ["stream", "connect", 1]
-            self.Send(message)
-            
-        else:
-            logFile.log("No streaming. Sound output via dac~")
-            
+        host       = 'localhost'
+        streamport = '8000'
+        mount      = 'radio.ogg'
+        hostInfo   = [host, mount, streamport]
+        
+        password   = 'testpassword'
+        
+        sampleRate = '44100'
+        channels   = '2'
+        maxBr      = '144'
+        nomBr      = '128'
+        minBr      = '96'
+        
+        settings   = [sampleRate, channels, maxBr, nomBr, minBr]
+        
+        logFile.log("Password is %s" % password)
+        message = ["stream", "password", password]
+        self.Send(message)
+        
+        logFile.log("HostInfo is %s" % str(hostInfo))
+        message = ["stream", "hostinfo", " ".join(hostInfo)]
+        self.Send(message)
+        
+        logFile.log("Stream Info is %s" % str(settings))
+        message = ["stream", "settings", " ".join(settings)]
+        self.Send(message)
+        
+        logFile.log("Connecting")
+        message = ["stream", "connect", 1]
+        self.Send(message)
+        
     
     def switch_patch(self):
         #change the active patch number
