@@ -48,7 +48,7 @@ class Config():
                 self.host = val
             else param == 'streamport':
                 self.strmPort = val
-            else param == 'comPort'
+            else param == 'comPort':
                 self.comPort = val
             else param == 'mountPoint':
                 self.mount = val
@@ -97,8 +97,8 @@ class PureData(Pd):
         self.patches[1]  = SubPatch(1)
         self.patches[2]  = SubPatch(2)
         
-        self.fadeTime    = self.config.fade
-        self.playTime    = self.config.play
+        self.fadeTime    = int(self.config.fade)
+        self.playTime    = int(self.config.play)
         
         self.gui         = gui
         
