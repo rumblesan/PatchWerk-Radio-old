@@ -46,8 +46,10 @@ class Config():
             param,val = line.split(':')
             if param == 'host':
                 self.host = val
-            else param == 'port':
-                self.port = val
+            else param == 'streamport':
+                self.strmPort = val
+            else param == 'comPort'
+                self.comPort = val
             else param == 'mountPoint':
                 self.mount = val
             else param == 'password':
@@ -83,7 +85,7 @@ class SubPatch():
 
 class PureData(Pd):
         
-    def __init__(self, comPort=30320, gui=False):
+    def __init__(self, gui=False):
         self.patchName   = 'masterPatch.pd'
         
         self.config      = Config(cfgFile)
@@ -111,7 +113,7 @@ class PureData(Pd):
         
         path             = [patchDir, masterDir]
         
-        Pd.__init__(self, comPort, self.gui, self.patchName, extra=extras, path=path)
+        Pd.__init__(self, self.config.comPort, self.gui, self.patchName, extra=extras, path=path)
         
         logFile.log(self.argLine)
 
@@ -138,7 +140,7 @@ class PureData(Pd):
         config     = self.config
         
         password   = config.password
-        hostInfo   = [config.host, config.mount, config.port]
+        hostInfo   = [config.host, config.mount, config.strmPort]
         settings   = [config.sRate, config.chans, config.maxBr, config.nomBr, config.minBr]
         
         message = ["stream", "password", password]
