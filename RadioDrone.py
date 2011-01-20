@@ -8,9 +8,7 @@ import random
 from Pd import Pd
 from time import time, strftime
 
-cfgFile   = 'config.cfg'
-patchDir  = './patches'
-masterDir = './master'
+configFile   = 'config.cfg'
 
 class LoggingObj():
 
@@ -65,6 +63,10 @@ class Config():
                 self.fade = val
             elif param == 'playTime':
                 self.play = val
+            elif param == 'patchDir':
+                self.patchDir = val
+            elif param == 'masterDir':
+                self.masterDir = val
             else:
                 self.log.write("CfgError:%s isn't a known parameter" % param)
             
@@ -91,7 +93,7 @@ class PureData(Pd):
         
         #TODO: have the config file path passed
         #      as an argument to the script
-        self.config      = Config(cfgFile)
+        self.config      = Config(configFile)
         
         self.active      = 2
         self.old         = 1
@@ -114,7 +116,7 @@ class PureData(Pd):
         
         extras           = "-alsa"
         
-        path             = [patchDir, masterDir]
+        path             = [self.config.patchDir, self.config.masterDir]
         
         Pd.__init__(self, comPort, gui, self.patch, extra=extras, path=path)
         
@@ -245,6 +247,7 @@ class PureData(Pd):
             for file in fileList:
                 if self.fileMatch.search(file):
                     break
+                    #TODO: What happens if it doesn't find the file it needs
         
             self.log.write("Chosen %s as new patch" % file)
             if file != current:
@@ -262,9 +265,9 @@ class PureData(Pd):
         patch = self.patches[self.active].patch
         path  = self.patches[self.active].path
         
-        self.log.write("***************************************")
-        self.log.write("Problem loading %s from %s" % (patch, path))
-        self.log.write("Unloading patch and starting again")
+        self.log.write("Error:***************************************")
+        self.log.write("Error:Problem loading %s from %s" % (patch, path))
+        self.log.write("Error:Unloading patch and starting again")
         
         message = ['close', patch]
         self.Send(message)
