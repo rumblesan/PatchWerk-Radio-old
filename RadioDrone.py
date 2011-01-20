@@ -8,7 +8,6 @@ import random
 from Pd import Pd
 from time import time, strftime
 
-configFile   = 'config.cfg'
 
 class LoggingObj():
 
@@ -84,7 +83,7 @@ class SubPatch():
 
 class PureData(Pd):
         
-    def __init__(self):
+    def __init__(self, configFile):
         
         self.patch   = 'masterPatch.pd'
         
@@ -348,11 +347,16 @@ class PureData(Pd):
         self.log.write("ComsError:%s" % str(error))
     
 
-def main():
+def main(args):
     
+    #TODO: simple but effective. needs decent parsing tho.
+    if args[0] == "-c":
+        configFile = args[1]
+    else:
+        sys.exit(1)
     
     #create mixing/streaming patch
-    puredata = PureData()
+    puredata = PureData(configFile)
     puredata.pause(1)
     
     #check that pure data is running fine
@@ -394,4 +398,4 @@ def main():
         
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv)
