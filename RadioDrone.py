@@ -14,18 +14,14 @@ masterDir = './master'
 
 class LoggingObj():
 
-    def __init__(self, foreground=False):
-        self.logFile    = os.path.join('/var/log/radioServer/radioServer.log')
-        self.foreground = foreground
-        if not self.foreground:
-            self.fileHandle = open(self.logFile, 'w')
+    def __init__(self, file):
+        self.logFile    = os.path.join(file)
+        self.fileHandle = open(self.logFile, 'w')
+        self.header()
 
     def write(self, logLine):
         output = "%s   %s\n" % (self.timeStamp(), logLine)
-        if self.foreground:
-            print output
-        else:
-            self.fileHandle.write(output)
+        self.fileHandle.write(output)
     
     def timeStamp(self):
         stamp = strftime("%Y%m%d-%H:%M:%S")
@@ -33,10 +29,7 @@ class LoggingObj():
     
     def header(self):
         output = "\n*******************\nStartingUp\n*******************\n"
-        if self.foreground:
-            print output
-        else:
-            self.fileHandle.write(output)
+        self.fileHandle.write(output)
     
 class Config():
     #Class for loading and holding the config data
@@ -89,12 +82,12 @@ class SubPatch():
 
 class PureData(Pd):
         
-    def __init__(self, gui=False):
+    def __init__(self):
         
         self.patch   = 'masterPatch.pd'
         
-        self.log         = LoggingObj()
-        self.log.header()
+        logFile          = '/var/log/radioServer/radioServer.log'
+        self.log         = LoggingObj(logFile)
         
         #TODO: have the config file path passed
         #      as an argument to the script
@@ -103,16 +96,14 @@ class PureData(Pd):
         self.active      = 2
         self.old         = 1
         
-        self.patches     = {}
-        self.patches[1]  = SubPatch(1)
-        self.patches[2]  = SubPatch(2)
+        self.patches     = {1:SubPatch(1), 2:SubPatch(2)}
         
         self.fadeTime    = int(self.config.fade)
         self.playTime    = int(self.config.play)
         
         comPort          = int(self.config.comPort)
         
-        self.gui         = gui
+        gui              = False
         
         self.regWait     = False
         self.regTimeout  = 20
@@ -127,7 +118,7 @@ class PureData(Pd):
         
         Pd.__init__(self, comPort, gui, self.patch, extra=extras, path=path)
         
-        self.log.write("starting PD with: %s" % self.argLine)
+        self.log.write("Starting PD Process:%s" % self.argLine)
     
     def check_alive(self):
         if self.Alive:
@@ -168,8 +159,16 @@ class PureData(Pd):
         config     = self.config
         
         password   = config.password
-        hostInfo   = [config.host, config.mount, config.strmPort]
-        settings   = [config.sRate, config.chans, config.maxBr, config.nomBr, config.minBr]
+        
+        hostInfo   = [config.host]
+        hostInfo.append(config.mount)
+        hostInfo.append(config.strmPort)
+        
+        settings   = [config.sRate]
+        settings.append(config.chans)
+        settings.append(config.maxBr)
+        settings.append(config.nomBr)
+        settings.append(config.minBr)
         
         message = ["stream", "password", password]
         self.Send(message)
