@@ -18,7 +18,7 @@ masterDir = './master'
 
 class LoggingObj():
 
-    def __init__(self, foreground):
+    def __init__(self, foreground=False):
         self.logFile    = os.path.join('')
         self.foreground = foreground
         if not foreground:
@@ -342,80 +342,61 @@ class PureData(Pd):
     
     def ComError(self, data):
         logFile.log("Communication error :%s" % str(error))
-
-class ServerDaemon(Daemon):
     
-    def run(self, foreground=False):
-        
-        global logFile
 
-        logFile = LoggingObj(foreground)
-        
-        logFile.log('\n\n')
-        logFile.log('Radio Drone Starting Up')
-        logFile.log('')
-        
-        #TODO: pass a reference to the logFile to the puredata Object
+def main():
+    
+    global logFile
 
-        #create mixing/streaming patch
-        puredata = PureData()
-        puredata.pause(1)
+    logFile = LoggingObj()
+    
+    logFile.log('\n\n')
+    logFile.log('Radio Drone Starting Up')
+    logFile.log('')
+    
+    #TODO: pass a reference to the logFile to the puredata Object
+
+    #create mixing/streaming patch
+    puredata = PureData()
+    puredata.pause(1)
+    
+    #check that pure data is running fine
+    puredata.check_alive()
+    
+    #check that Python and PD are connected
+    puredata.check_network()
+    
+    #Turn on DSP for pure data
+    puredata.Send(['dsp', 1])
+    
+    #start streaming
+    puredata.streaming_setup()
+    
+    while True:
+        #switch which patch is active assuming not in error state
+        if not puredata.loadError:
+            puredata.switch_patch()
         
-        #check that pure data is running fine
-        puredata.check_alive()
+        #tell master PD to create the new patch
+        puredata.create_new_patch()
         
-        #check that Python and PD are connected
-        puredata.check_network()
-        
-        #Turn on DSP for pure data
-        puredata.Send(['dsp', 1])
-        
-        #start streaming
-        puredata.streaming_setup()
-        
-        while True:
-            #switch which patch is active assuming not in error state
-            if not puredata.loadError:
-                puredata.switch_patch()
+        if puredata.loadError:
+            #call function to deal with loading error
+            puredata.load_error()
+        else:
+            #turn the DSP in the new patch on
+            puredata.activate_patch()
             
-            #tell master PD to create the new patch
-            puredata.create_new_patch()
+            #fade over to new patch
+            puredata.crossfade()
             
-            if puredata.loadError:
-                #call function to deal with loading error
-                puredata.load_error()
-            else:
-                #turn the DSP in the new patch on
-                puredata.activate_patch()
-                
-                #fade over to new patch
-                puredata.crossfade()
-                
-                #kill off old patch
-                puredata.kill_old_patch()
-                
-                #pause untill next patch needs to be loaded
-                puredata.pause(puredata.playTime)
+            #kill off old patch
+            puredata.kill_old_patch()
             
+            #pause untill next patch needs to be loaded
+            puredata.pause(puredata.playTime)
+        
 
 if __name__ == "__main__":
-    
-    daemon = ServerDaemon(pidFile)
-    
-    if len(sys.argv) == 2:
-        if 'start' == sys.argv[1]:
-            daemon.start()
-        elif 'foreground' == sys.argv[1]:
-            daemon.run(True)
-        elif 'stop' == sys.argv[1]:
-            daemon.stop()
-        elif 'restart' == sys.argv[1]:
-            daemon.restart()
-        else:
-            print "Unknown command"
-            sys.exit(2)
-        sys.exit(0)
-    else:
-        print "usage: %s start|stop|restart|foreground" % sys.argv[0]
-        sys.exit(2)
-        
+    main()
+
