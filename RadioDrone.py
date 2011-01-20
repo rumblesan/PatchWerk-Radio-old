@@ -11,22 +11,17 @@ from time import time, strftime
 
 class LoggingObj():
 
-    def __init__(self, file):
-        self.logFile    = os.path.join(file)
-        self.fileHandle = open(self.logFile, 'w')
+    def __init__(self):
         self.header()
 
     def write(self, logLine):
-        output = "%s   %s\n" % (self.timeStamp(), logLine)
-        self.fileHandle.write(output)
+        print "%s   %s\n" % (self.timeStamp(), logLine)
     
     def timeStamp(self):
-        stamp = strftime("%Y%m%d-%H:%M:%S")
-        return stamp
+        return strftime("%Y%m%d-%H:%M:%S")
     
     def header(self):
-        output = "\n*******************\nStartingUp\n*******************\n"
-        self.fileHandle.write(output)
+        print "\n*******************\nStartingUp\n*******************\n"
     
 class Config():
     #Class for loading and holding the config data
@@ -87,8 +82,7 @@ class PureData(Pd):
         
         self.patch   = 'masterPatch.pd'
         
-        logFile          = '/var/log/radioServer/radioServer.log'
-        self.log         = LoggingObj(logFile)
+        self.log         = LoggingObj()
         
         #TODO: have the config file path passed
         #      as an argument to the script
