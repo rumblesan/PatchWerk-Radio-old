@@ -163,6 +163,14 @@ class PureData(Pd):
         settings.append(config.nomBr)
         settings.append(config.minBr)
         
+        #set the server type to Icecast2
+        self.Send(["stream", "server", 1])
+        
+        #send stream META Data
+        self.Send(["stream", "meta", "ARTIST", "Rumble-San"])
+        self.Send(["stream", "meta", "TITLE", "Patch_Radio"])
+        self.Send(["stream", "meta", "GENRE", "Generative_Sounds"])
+        
         self.Send(["stream", "password", password])
         
         self.log.write("HostInfo is %s" % str(hostInfo))
