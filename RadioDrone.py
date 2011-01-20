@@ -232,6 +232,7 @@ class PureData(Pd):
         #will need to figure out how this is going to work
 
         current = self.patches[self.old].patch
+        patchDir = self.config.patchDir
         
         found = False
         while not found:
@@ -350,8 +351,8 @@ class PureData(Pd):
 def main(args):
     
     #TODO: simple but effective. needs decent parsing tho.
-    if args[0] == "-c":
-        configFile = args[1]
+    if args[1] == "-c":
+        configFile = args[2]
     else:
         sys.exit(1)
     
