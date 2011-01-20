@@ -84,8 +84,6 @@ class PureData(Pd):
         
         self.log         = LoggingObj()
         
-        #TODO: have the config file path passed
-        #      as an argument to the script
         self.config      = Config(configFile)
         
         self.active      = 2
@@ -203,8 +201,7 @@ class PureData(Pd):
         self.patches[self.active].path  = path
         
         self.log.write("New Patch is %s in %s" % (patch, path))
-        self.Send(['open', 'path', path])
-        self.Send(['open', 'patch', patch])
+        self.Send(['open', patch, path])
         
         #change regWait to true. We will wait untill the patch is registered
         self.regWait = True
