@@ -172,20 +172,16 @@ class PureData(Pd):
         settings.append(config.nomBr)
         settings.append(config.minBr)
         
-        message = ["stream", "password", password]
-        self.Send(message)
+        self.Send(["stream", "password", password])
         
         self.log.write("HostInfo is %s" % str(hostInfo))
-        message = ["stream", "hostinfo", " ".join(hostInfo)]
-        self.Send(message)
+        self.Send(["stream", "hostinfo", " ".join(hostInfo)])
         
         self.log.write("Stream Info is %s" % str(settings))
-        message = ["stream", "settings", " ".join(settings)]
-        self.Send(message)
+        self.Send(["stream", "settings", " ".join(settings)])
         
         self.log.write("Attempting connection to Icecast")
-        message = ["stream", "connect", 1]
-        self.Send(message)
+        self.Send(["stream", "connect", 1])
         
     
     def switch_patch(self):
@@ -244,17 +240,23 @@ class PureData(Pd):
             dataDir = os.path.join(patchDir, random.choice(dirList))
             
             fileList = os.listdir(dataDir)
+            
+            main = False
             for file in fileList:
                 if self.fileMatch.search(file):
+                    main = True
                     break
-                    #TODO: What happens if it doesn't find the file it needs
         
-            self.log.write("Chosen %s as new patch" % file)
-            if file != current:
-                self.log.write("Is not the same as the old patch")
-                found = True
+            if main:
+                self.log.write("Chosen %s as new patch" % file)
+                if file != current:
+                    self.log.write("Is not the same as the old patch")
+                    found = True
+                else:
+                    self.log.write("%s is also the current patch" % file)
+                    self.log.write("Choosing again.")
             else:
-                self.log.write("%s is also the current patch" % file)
+                self.log.write("Error:folder %s has no main patch" % dataDir)
                 self.log.write("Choosing again.")
         
         patchInfo = (file, dataDir)
@@ -269,15 +271,13 @@ class PureData(Pd):
         self.log.write("Error:Problem loading %s from %s" % (patch, path))
         self.log.write("Error:Unloading patch and starting again")
         
-        message = ['close', patch]
-        self.Send(message)
+        self.Send(['close', patch])
     
     def activate_patch(self):
         #turn on DSP in new patch
         name = self.patches[self.active].name
         self.log.write("Turning on DSP in %s" % name)
-        message = [name, 'dsp', 1]
-        self.Send(message)
+        self.Send([name, 'dsp', 1])
         self.pause(1)
     
     def crossfade(self):
@@ -285,11 +285,9 @@ class PureData(Pd):
         newName = self.patches[self.active].name
         self.log.write("Fading over to %s" % newName)
         
-        message = ['volume', 'fade', self.fadeTime]
-        self.Send(message)
+        self.Send(['volume', 'fade', self.fadeTime])
         
-        message = ['volume', 'chan', self.active]
-        self.Send(message)
+        self.Send(['volume', 'chan', self.active])
         
         #pause while the fade occours
         self.pause(self.fadeTime)
@@ -301,16 +299,14 @@ class PureData(Pd):
             patch = self.patches[self.old].patch
             self.log.write("Stopping %s" % name)
             
-            message = [name, 'dsp', 0]
-            self.Send(message)
+            self.Send([name, 'dsp', 0])
             
             reg = 'reg%i' % self.old
             self.Send([reg, 0])
             
             self.pause(1)
             
-            message = ['close', patch]
-            self.Send(message)
+            self.Send(['close', patch])
             self.patches[self.old].ok = False
         else:
             self.log.write("%s doesn't seem to be running" % name)
@@ -326,8 +322,7 @@ class PureData(Pd):
         self.log.write("Registering number %s to %s" % (pdNum, name))
         
         reg = 'reg%i' % self.active
-        message = [reg, pdNum]
-        self.Send(message)
+        self.Send([reg, pdNum])
         
         #set regWait to False. Patch is registered
         self.regWait = False
@@ -383,6 +378,7 @@ def main():
         if puredata.loadError:
             #call function to deal with loading error
             puredata.load_error()
+            
         else:
             #turn the DSP in the new patch on
             puredata.activate_patch()
