@@ -15,7 +15,7 @@ class LoggingObj():
         self.header()
 
     def write(self, logLine):
-        print "%s   %s\n" % (self.timeStamp(), logLine)
+        print "%s   %s" % (self.timeStamp(), logLine)
     
     def timeStamp(self):
         return strftime("%Y%m%d-%H:%M:%S")
