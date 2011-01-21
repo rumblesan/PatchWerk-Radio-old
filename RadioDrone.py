@@ -10,7 +10,8 @@ from time import time, strftime
 
 
 class LoggingObj():
-
+    #class to handle logging. prepends timestamp to data then prints it out
+    
     def __init__(self):
         self.header()
 
@@ -77,7 +78,7 @@ class SubPatch():
     
 
 class PureData(Pd):
-        
+    #Class that interfaces with PD process
     def __init__(self, configFile):
         
         self.patch   = 'masterPatch.pd'
@@ -274,15 +275,13 @@ class PureData(Pd):
     
     def activate_patch(self):
         #turn on DSP in new patch
-        name = self.patches[self.active].name
-        self.log.write("Turning on DSP in %s" % name)
-        self.Send([name, 'dsp', 1])
+        self.log.write("Turning on %s DSP" % self.patches[self.active].name)
+        self.Send(["patch",self.active, 'dsp', 1])
         self.pause(1)
     
     def crossfade(self):
         #fade across to new active patch
-        newName = self.patches[self.active].name
-        self.log.write("Fading over to %s" % newName)
+        self.log.write("Fading over to %s" % self.patches[self.active].name)
         
         self.Send(['volume', 'fade', self.fadeTime])
         
@@ -295,17 +294,15 @@ class PureData(Pd):
         #disconnect old patch from master patch and then del the object
         name  = self.patches[self.old].name
         if self.patches[self.old].ok:
-            patch = self.patches[self.old].patch
             self.log.write("Stopping %s" % name)
             
-            self.Send([name, 'dsp', 0])
+            self.Send(["patch", self.old, 'dsp', 0])
             
-            reg = 'reg%i' % self.old
-            self.Send([reg, 0])
+            self.Send([register, self.old, 0])
             
             self.pause(1)
             
-            self.Send(['close', patch])
+            self.Send(['close', self.patches[self.old].patch])
             self.patches[self.old].ok = False
         else:
             self.log.write("%s doesn't seem to be running" % name)
@@ -320,8 +317,7 @@ class PureData(Pd):
         name  = self.patches[self.active].name
         self.log.write("Registering number %s to %s" % (pdNum, name))
         
-        reg = 'reg%i' % self.active
-        self.Send([reg, pdNum])
+        self.Send([register, self.active, pdNum])
         
         #set regWait to False. Patch is registered
         self.regWait = False
