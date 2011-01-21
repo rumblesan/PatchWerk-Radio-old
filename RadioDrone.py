@@ -167,9 +167,9 @@ class PureData(Pd):
         self.Send(["stream", "server", 1])
         
         #send stream META Data
-        self.Send(["stream", "meta", "ARTIST", "Rumble-San"])
-        self.Send(["stream", "meta", "TITLE", "Patch_Radio"])
-        self.Send(["stream", "meta", "GENRE", "Generative_Sounds"])
+        self.Send(["stream", "meta", "artist", "RumbleSan"])
+        #self.Send(["stream", "meta", "TITLE", "Patch_Radio"])
+        #self.Send(["stream", "meta", "GENRE", "Generative_Sounds"])
         
         self.Send(["stream", "password", password])
         

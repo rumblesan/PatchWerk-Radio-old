@@ -1,4 +1,4 @@
-#N canvas 11 7 1060 761 10;
+#N canvas 11 7 1060 722 10;
 #X obj 210 98 python-interface;
 #X obj 303 118 tgl 15 0 empty empty empty 17 7 0 10 -262144 -1 -1 0
 1;
@@ -117,7 +117,7 @@
 #X connect 11 0 8 1;
 #X restore 589 401 pd channelReg;
 #X obj 563 270 s streamInfo;
-#N canvas 543 39 1007 745 audioOut 1;
+#N canvas 359 23 1007 722 audioOut 1;
 #X obj 129 36 r streamInfo;
 #X obj 228 266 list trim;
 #X msg 129 198 passwd;
@@ -138,6 +138,11 @@
 #X msg 374 194 server \$1;
 #X obj 129 86 route password hostinfo connect settings server meta
 ;
+#X obj 514 117 route artist;
+#X obj 514 163 t b s;
+#X obj 514 142 symbol;
+#X msg 514 184 ARTIST;
+#X obj 514 206 pack s s;
 #X connect 0 0 18 0;
 #X connect 1 0 10 0;
 #X connect 2 0 8 0;
@@ -164,7 +169,13 @@
 #X connect 18 2 4 0;
 #X connect 18 3 11 0;
 #X connect 18 4 17 0;
-#X connect 18 5 10 0;
+#X connect 18 5 19 0;
+#X connect 19 0 21 0;
+#X connect 20 0 22 0;
+#X connect 20 1 23 1;
+#X connect 21 0 20 0;
+#X connect 22 0 23 0;
+#X connect 23 0 10 0;
 #X restore 549 470 pd audioOut;
 #X obj 61 221 unpack s s;
 #X obj 381 289 route 1 2;
