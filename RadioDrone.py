@@ -264,7 +264,7 @@ class PureData(Pd):
             
             self.Send(["patch", self.old, 'dsp', 0])
             
-            self.Send([register, self.old, 0])
+            self.Send(["register", self.old, 0])
             
             self.pause(1)
             
@@ -283,7 +283,7 @@ class PureData(Pd):
         name  = self.patches[self.active].name
         self.log.write("Registering number %s to %s" % (pdNum, name))
         
-        self.Send([register, self.active, pdNum])
+        self.Send(["register", self.active, pdNum])
         
         #set regWait to False. Patch is registered
         self.regWait = False
