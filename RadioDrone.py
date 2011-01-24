@@ -141,8 +141,8 @@ class PureData(Pd):
         
         #send stream META Data
         #TODO: Metadata still seems not to work on linux. Investigate
-        for tag, info in meta.iteritems():
-            self.Send(["stream", "meta", tag, info])
+        #for tag, info in meta.iteritems():
+            #self.Send(["stream", "meta", tag, info])
         
         self.Send(["stream", "password", password])
         

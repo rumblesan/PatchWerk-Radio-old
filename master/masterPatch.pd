@@ -18,7 +18,7 @@
 #X obj 122 360 symbol;
 #X obj 612 144 s~ 0-l;
 #X obj 683 142 s~ 0-r;
-#N canvas 431 111 520 464 volume 0;
+#N canvas 431 111 520 464 volume 1;
 #X obj 136 145 tgl 15 0 empty empty empty 17 7 0 10 -262144 -1 -1 0
 1;
 #X floatatom 183 198 5 0 0 0 - - -;
@@ -35,8 +35,11 @@
 #X obj 129 301 line~;
 #X obj 237 224 * 1000;
 #X obj 217 299 line~;
+#X obj 270 179 s masterCom;
+#X msg 264 145 volchan \$1;
 #X connect 0 0 1 0;
 #X connect 0 0 3 0;
+#X connect 0 0 16 0;
 #X connect 1 0 7 0;
 #X connect 2 0 8 0;
 #X connect 3 0 4 0;
@@ -51,6 +54,7 @@
 #X connect 13 0 7 1;
 #X connect 13 0 8 1;
 #X connect 14 0 11 0;
+#X connect 16 0 15 0;
 #X restore 573 337 pd volume;
 #X text 567 115 Dummy Send~ objects so that PD doesn't raise errors
 ;
@@ -117,7 +121,7 @@
 #X connect 11 0 8 1;
 #X restore 589 401 pd channelReg;
 #X obj 563 270 s streamInfo;
-#N canvas 359 23 1007 722 audioOut 1;
+#N canvas 203 46 1007 722 audioOut 0;
 #X obj 129 36 r streamInfo;
 #X obj 228 266 list trim;
 #X msg 129 198 passwd;
@@ -138,11 +142,6 @@
 #X msg 374 194 server \$1;
 #X obj 129 86 route password hostinfo connect settings server meta
 ;
-#X obj 514 117 route artist;
-#X obj 514 163 t b s;
-#X obj 514 142 symbol;
-#X msg 514 184 ARTIST;
-#X obj 514 206 pack s s;
 #X connect 0 0 18 0;
 #X connect 1 0 10 0;
 #X connect 2 0 8 0;
@@ -169,18 +168,12 @@
 #X connect 18 2 4 0;
 #X connect 18 3 11 0;
 #X connect 18 4 17 0;
-#X connect 18 5 19 0;
-#X connect 19 0 21 0;
-#X connect 20 0 22 0;
-#X connect 20 1 23 1;
-#X connect 21 0 20 0;
-#X connect 22 0 23 0;
-#X connect 23 0 10 0;
 #X restore 549 470 pd audioOut;
 #X obj 61 221 unpack s s;
 #X obj 381 289 route 1 2;
 #X obj 267 297 route 1 2;
 #X obj 210 176 route open close coms register volume stream;
+#X obj 318 450 s masterCom;
 #X connect 0 0 29 0;
 #X connect 0 1 1 0;
 #X connect 1 0 5 0;
@@ -190,8 +183,10 @@
 #X connect 7 0 8 1;
 #X connect 8 0 2 0;
 #X connect 10 0 11 0;
+#X connect 10 0 30 0;
 #X connect 11 0 9 1;
 #X connect 13 0 14 0;
+#X connect 13 0 30 0;
 #X connect 14 0 12 1;
 #X connect 15 0 3 0;
 #X connect 18 0 22 1;
