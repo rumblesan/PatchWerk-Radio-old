@@ -312,13 +312,13 @@ class PureData(Pd):
 def main(args):
     
     if len(args) != 3:
-        self.log.write("Too many Arguments. %i given" % len(args))
+        print "Too many Arguments. %i given" % len(args)
         sys.exit(1)
     elif args[1] != "-c":
-        self.log.write("Incorrect Arg. Exepected -c but got %s" % len(args))
+        print "Incorrect Arg. Exepected -c but got %s" % len(args)
         sys.exit(1)
     elif not os.path.isfile(args[2]):
-        self.log.write("File %s does not exist" % args[2])
+        print "File %s does not exist" % args[2]
         sys.exit(1)
     else:
         configFile = args[2]
