@@ -5,6 +5,7 @@ import os
 import re
 import sys
 import random
+import ConfigParser
 from Pd import Pd
 from time import time, strftime
 
@@ -24,49 +25,7 @@ class LoggingObj():
     def header(self):
         print "\n*******************\nStartingUp\n*******************\n"
     
-class Config():
-    #Class for loading and holding the config data
-    
-    def __init__(self, cfgFile):
-        cfgData = open(cfgFile)
-        
-        #TODO: this is scrappy as hell. improve it
-        for line in cfgData:
-            line = line.rstrip()
-            param,val = line.split(':')
-            if param == 'host':
-                self.host = val
-            elif param == 'streamport':
-                self.strmPort = val
-            elif param == 'comPort':
-                self.comPort = val
-            elif param == 'mountPoint':
-                self.mount = val
-            elif param == 'password':
-                self.password = val
-            elif param == 'samplerate':
-                self.sRate = val
-            elif param == 'channels':
-                self.chans = val
-            elif param == 'maxBitrate':
-                self.maxBr = val
-            elif param == 'nomBitrate':
-                self.nomBr = val
-            elif param == 'minBitrate':
-                self.minBr = val
-            elif param == 'fadeTime':
-                self.fade = val
-            elif param == 'playTime':
-                self.play = val
-            elif param == 'patchDir':
-                self.patchDir = val
-            elif param == 'masterDir':
-                self.masterDir = val
-            else:
-                self.log.write("CfgError:%s isn't a known parameter" % param)
-            
-        cfgData.close()
-    
+
 class SubPatch():
     #Class for holding information about sub patches
     
@@ -85,17 +44,18 @@ class PureData(Pd):
         
         self.log         = LoggingObj()
         
-        self.config      = Config(configFile)
+        self.config      = ConfigParser.SafeConfigParser()
+        self.config.read(configFile)
         
         self.active      = 2
         self.old         = 1
         
         self.patches     = {1:SubPatch(1), 2:SubPatch(2)}
         
-        self.fadeTime    = int(self.config.fade)
-        self.playTime    = int(self.config.play)
+        comPort          = self.config.getint('puredata', 'comPort')
         
-        comPort          = int(self.config.comPort)
+        self.fadeTime    = self.config.getint('puredata', 'fadeTime')
+        self.playTime    = self.config.getint('puredata', 'playTime')
         
         gui              = False
         
@@ -108,7 +68,9 @@ class PureData(Pd):
         
         extras           = "-alsa"
         
-        path             = [self.config.patchDir, self.config.masterDir]
+        patchDir         = self.config.get('paths', 'patchDir')
+        masterDir        = self.config.get('paths', 'masterDir')
+        path             = [patchDir, masterDir]
         
         Pd.__init__(self, comPort, gui, self.patch, extra=extras, path=path)
         
@@ -150,27 +112,37 @@ class PureData(Pd):
     def streaming_setup(self):
         #send a message to the streaming controls in the master patch
         self.log.write("Setting up streaming")
-        config     = self.config
         
-        password   = config.password
+        password     = self.config.get('streaming', 'password')
         
-        hostInfo   = [config.host]
-        hostInfo.append(config.mount)
-        hostInfo.append(config.strmPort)
+        hostInfo     = [self.config.get('streaming', 'host')]
+        hostInfo.append(self.config.get('streaming', 'mountPoint'))
+        hostInfo.append(self.config.get('streaming', 'streamport'))
         
-        settings   = [config.sRate]
-        settings.append(config.chans)
-        settings.append(config.maxBr)
-        settings.append(config.nomBr)
-        settings.append(config.minBr)
+        settings     = [self.config.get('streaming', 'samplerate')]
+        settings.append(self.config.get('streaming', 'channels'))
+        settings.append(self.config.get('streaming', 'maxBitrate'))
+        settings.append(self.config.get('streaming', 'nomBitrate'))
+        settings.append(self.config.get('streaming', 'minBitrate'))
+        
+        meta                = {}
+        meta['ARTIST']      = self.config.get('meta', 'artist')
+        meta['TITLE']       = self.config.get('meta', 'title')
+        meta['PERFORMANCE'] = self.config.get('meta', 'performance')
+        meta['DESCRIPTION'] = self.config.get('meta', 'description')
+        meta['GENRE']       = self.config.get('meta', 'genre')
+        meta['LOCATION']    = self.config.get('meta', 'location')
+        meta['COPYRIGHT']   = self.config.get('meta', 'copyright')
+        meta['CONTACT']     = self.config.get('meta', 'contact')
+        
         
         #set the server type to Icecast2
         self.Send(["stream", "server", 1])
         
         #send stream META Data
-        self.Send(["stream", "meta", "artist", "RumbleSan"])
-        #self.Send(["stream", "meta", "TITLE", "Patch_Radio"])
-        #self.Send(["stream", "meta", "GENRE", "Generative_Sounds"])
+        #TODO: Metadata still seems not to work on linux. Investigate
+        for tag, info in meta.iteritems():
+            self.Send(["stream", "meta", tag, info])
         
         self.Send(["stream", "password", password])
         
@@ -226,7 +198,7 @@ class PureData(Pd):
         #will need to figure out how this is going to work
 
         current = self.patches[self.old].patch
-        patchDir = self.config.patchDir
+        patchDir = self.config.get('paths', 'patchDir')
         
         found = False
         while not found:
