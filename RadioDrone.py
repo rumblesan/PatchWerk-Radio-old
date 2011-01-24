@@ -186,13 +186,7 @@ class PureData(Pd):
     
     def switch_patch(self):
         #change the active patch number
-        #TODO: real scrappy, needs to be neater
-        if self.active == 1:
-            self.active = 2
-            self.old    = 1
-        elif self.active == 2:
-            self.active = 1
-            self.old    = 2
+        self.old, self.active = self.active, self.old
         name = "patch%i" % self.active
         self.log.write("Changing active patch to be %s" % name)
     
