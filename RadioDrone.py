@@ -242,7 +242,7 @@ class PureData(Pd):
     def activate_patch(self):
         #turn on DSP in new patch
         self.log.write("Turning on %s DSP" % self.patches[self.active].name)
-        self.Send(["patch",self.active, 'dsp', 1])
+        self.Send(["coms",self.active, 'dsp', 1])
         self.pause(1)
     
     def crossfade(self):
@@ -262,7 +262,7 @@ class PureData(Pd):
         if self.patches[self.old].ok:
             self.log.write("Stopping %s" % name)
             
-            self.Send(["patch", self.old, 'dsp', 0])
+            self.Send(["coms", self.old, 'dsp', 0])
             
             self.Send(["register", self.old, 0])
             
