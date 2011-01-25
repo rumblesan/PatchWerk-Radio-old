@@ -1,3 +1,4 @@
+
 #!/usr/bin/env python
 
 #Import Modules
@@ -194,39 +195,51 @@ class PureData(Pd):
     
     def get_random_patch(self):
         #get a random patch from the patch directory
-        #currently just returns the test patch
-        #will need to figure out how this is going to work
-
-        current = self.patches[self.old].patch
-        patchDir = self.config.get('paths', 'patchDir')
         
-        found = False
-        while not found:
-            dirList = os.listdir(patchDir)
-            dataDir = os.path.join(patchDir, random.choice(dirList))
-            
-            fileList = os.listdir(dataDir)
-            
-            main = False
-            for file in fileList:
-                if self.fileMatch.search(file):
-                    main = True
-                    break
+        #get the patch directory path
+        patchDir      = self.config.get('paths', 'patchDir')
         
-            if main:
-                self.log.write("Chosen %s as new patch" % file)
-                if file != current:
-                    self.log.write("Is not the same as the old patch")
-                    found = True
+        #get the name of the previously loaded patch
+        previousPatch = self.patches[self.old].patch
+        
+        #get a list of files from the patch directory
+        dirList       = os.listdir(patchDir)
+        
+        patchFound    = False
+        dirFound      = False
+        mainFound     = False
+        
+        #keep looping untill a suitable next patch is found
+        while not patchFound:
+            
+            #keep going until a valid directory is found
+            while not dirFound:
+                dataDir = os.path.join(patchDir, random.choice(dirList))
+                #TODO: want to put a check in here for the directory name
+                if os.path.isdir(dataDir):
+                    dirFound = True
                 else:
-                    self.log.write("%s is also the current patch" % file)
-                    self.log.write("Choosing again.")
+                    self.log.write("Error:%s is not a valid folder" % dataDir)
+            
+            #suitable folder chosen, now check for main patch inside it
+            fileList = os.listdir(dataDir)
+            for patchFile in fileList:
+                if self.fileMatch.search(patchFile):
+                    mainFound = True
+            
+            if not mainFound:
+                self.log.write("Error:%s has no main patch" % dataDir)
+            elif patchFile == previousPatch:
+                self.log.write("Error:%s also the previous patch" % patchFile)
             else:
-                self.log.write("Error:folder %s has no main patch" % dataDir)
+                #this patch is ok, stop the loop
+                self.log.write("Chosen %s as new patch" % patchFile)
+                patchFound = True
+            
+            if not patchFound:
                 self.log.write("Choosing again.")
         
-        patchInfo = (file, dataDir)
-        return patchInfo
+        return (patchFile, dataDir)
     
     def load_error(self):
         #notifies when there has been an error loading a patch
