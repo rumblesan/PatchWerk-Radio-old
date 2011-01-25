@@ -1,0 +1,8 @@
+#! /bin/sh
+
+PATH=/usr/local/sbin
+FOLDER=/PatchWerk-Radio
+
+DAEMON=$PATH$FOLDER/Radio.py
+CONFIG=$PATH$FOLDER/config.cfg
+exec $DAEMON -c $CONFIG
