@@ -222,8 +222,9 @@ class PureData(Pd):
             
             #suitable folder chosen, now check for main patch inside it
             fileList = os.listdir(dataDir)
-            for patchFile in fileList:
-                if self.fileMatch.search(patchFile):
+            for file in fileList:
+                if self.fileMatch.search(file):
+                    patchFile = file
                     mainFound = True
             
             if not mainFound:
