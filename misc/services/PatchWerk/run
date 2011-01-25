@@ -5,4 +5,6 @@ FOLDER=/PatchWerk-Radio
 
 DAEMON=$PATH$FOLDER/Radio.py
 CONFIG=$PATH$FOLDER/config.cfg
+
+exec 2>&1
 exec $DAEMON -c $CONFIG
