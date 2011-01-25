@@ -1,2 +1,2 @@
 #!/bin/sh
-exec multilog ./main
+exec setuidgid logger multilog /var/log/daemonLogs/PatchWerk
