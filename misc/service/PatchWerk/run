@@ -1,10 +1,11 @@
 #! /bin/sh
 
-PATH=/usr/local/sbin
-FOLDER=/PatchWerk-Radio
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 
-DAEMON=$PATH$FOLDER/Radio.py
-CONFIG=$PATH$FOLDER/config.cfg
+FOLDER=/usr/local/sbin/PatchWerk-Radio
+
+DAEMON=$FOLDER/Radio.py
+CONFIG=$FOLDER/config.cfg
 
 exec 2>&1
 exec setuidgid patchwerk $DAEMON -c $CONFIG

@@ -1,2 +1,7 @@
 #!/bin/sh
-exec setuidgid logger multilog /var/log/daemonLogs/PatchWerk
+
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+
+LOGFOLDER=/var/log/daemonLogs/PatchWerk
+
+exec setuidgid logger multilog $LOGFOLDER
