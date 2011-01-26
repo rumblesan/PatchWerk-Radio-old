@@ -1,4 +1,4 @@
-if he's messing you about then#!/usr/bin/env python
+#!/usr/bin/env python
 
 #Import Modules
 import os
