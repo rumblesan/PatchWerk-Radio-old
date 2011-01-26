@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+if he's messing you about then#!/usr/bin/env python
 
 #Import Modules
 import os
@@ -195,12 +195,11 @@ class PureData(Pd):
     def get_random_patch(self):
         #get a random patch from the patch directory
         
-        #get the patch directory path
-        patchDir      = self.config.get('paths', 'patchDir')
-        
         #get the name of the previously loaded patch
         previousPatch = self.patches[self.old].patch
         
+        #get the patch directory path
+        patchDir      = self.config.get('paths', 'patchDir')
         #get a list of files from the patch directory
         dirList       = os.listdir(patchDir)
         
@@ -226,11 +225,14 @@ class PureData(Pd):
                 if self.fileMatch.search(file):
                     patchFile = file
                     mainFound = True
+                    
             
             if not mainFound:
                 self.log.write("Error:%s has no main patch" % dataDir)
+                dirFound = False
             elif patchFile == previousPatch:
                 self.log.write("Error:%s also the previous patch" % patchFile)
+                dirFound = False
             else:
                 #this patch is ok, stop the loop
                 self.log.write("Chosen %s as new patch" % patchFile)
