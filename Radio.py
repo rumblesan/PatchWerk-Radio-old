@@ -5,6 +5,7 @@ import os
 import re
 import sys
 import random
+import signal
 import ConfigParser
 from Pd import Pd
 from time import time, strftime
@@ -314,6 +315,20 @@ class PureData(Pd):
         else:
             self.log.write("PD:%s" % str(error))
     
+    def terminate(self, signum, frame):
+        #called when a SIGTERM is received
+        #will deal with:- disconnecting the stream
+        #                 shutting down PD nicely
+        #                 exit python
+        self.log.write("Received SIGTERM")
+        self.log.write("Disconnecting Stream")
+        self.Send(["stream", "connect", 0])
+        if self.Alive():
+            self.log.write("Killing PureData Process")
+            self.Exit()
+        self.log.write("Bye Bye")
+        sys.exit(0)
+    
     def PdStarted(self):
         self.log.write("PD has started")
     
@@ -341,6 +356,9 @@ def main(args):
     #create mixing/streaming patch
     puredata = PureData(configFile)
     puredata.pause(1)
+    
+    #register handler for SIGTERM
+    signal.signal(signal.SIGTERM, puredata.terminate)
     
     #check that pure data is running fine
     puredata.check_alive()
