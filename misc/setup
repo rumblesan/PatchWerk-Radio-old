@@ -1,0 +1,41 @@
+#!/bin/sh
+
+BINDIR=/usr/local/sbin/PatchWerk
+LOGDIR=/var/log/PatchWerk
+PATCHDIR=/var/PatchWerk/patches
+SVCDIR=/etc/svc.d/PatchWerk
+cd ../..
+
+cd PatchWerk-Radio
+sudo -u guy git pull origin master
+
+cd ../Radio-Patches
+sudo -u guy git pull origin master
+
+cd ..
+
+rm -r $BINDIR
+cp -r $BINDIR/Radio.py   $BINDIR
+cp -r $BINDIR/master     $BINDIR
+cp -r $BINDIR/Pd         $BINDIR
+cp -r $BINDIR/config.cfg $BINDIR
+
+chmod 754 $BINDIR/Radio.py
+chown -R patchwerk:radio $BINDIR
+
+if [ -f ./config.cfg]
+then
+echo using the config file here
+rm  $BINDIR/config.cfg
+cp  ./config.cfg $BINDIR/config.cfg
+fi
+
+rm -r $PATCHDIR/*
+cp -r ./Radio-Patches/* $PATCHDIR/
+rm -r $PATCHDIR/README
+
+rm -r $SVCDIR
+cp -r ./PatchWerk-Radio/misc/service/PatchWerk/* $SVCDIR/
+chmod 744 $SVCDIR/run
+chmod 744 $SVCDIR/run
+
