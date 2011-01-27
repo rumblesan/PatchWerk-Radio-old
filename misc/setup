@@ -8,8 +8,8 @@ SVCDIR=/etc/svc.d/PatchWerk
 if [ ! -d $LOGDIR ]
 then
     mkdir $LOGDIR
-    chown logger:logging $LOGDIR
 fi
+chown logger:logging $LOGDIR
 
 cd ../..
 
