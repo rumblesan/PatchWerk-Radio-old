@@ -164,6 +164,7 @@
 #X connect 17 2 4 0;
 #X connect 17 3 10 0;
 #X connect 17 4 16 0;
+#X connect 17 5 18 0;
 #X restore 549 470 pd audioOut;
 #X obj 61 221 unpack s s;
 #X obj 381 289 route 1 2;

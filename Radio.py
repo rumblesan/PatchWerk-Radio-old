@@ -129,7 +129,6 @@ class PureData(Pd):
         meta                = {}
         meta['ARTIST']      = self.config.get('meta', 'artist')
         meta['TITLE']       = self.config.get('meta', 'title')
-        meta['PERFORMANCE'] = self.config.get('meta', 'performance')
         meta['DESCRIPTION'] = self.config.get('meta', 'description')
         meta['GENRE']       = self.config.get('meta', 'genre')
         meta['LOCATION']    = self.config.get('meta', 'location')
@@ -141,9 +140,8 @@ class PureData(Pd):
         self.Send(["stream", "server", 1])
         
         #send stream META Data
-        #TODO: Metadata still seems not to work on linux. Investigate
-        #for tag, info in meta.iteritems():
-            #self.Send(["stream", "meta", tag, info])
+        for tag, info in meta.iteritems():
+            self.Send(["stream", "meta", tag, info])
         
         self.Send(["stream", "password", password])
         
