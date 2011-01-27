@@ -2,7 +2,7 @@
 
 PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 
-FOLDER=/usr/local/sbin/PatchWerk-Radio
+FOLDER=/usr/local/sbin/PatchWerk
 
 DAEMON=$FOLDER/Radio.py
 CONFIG=$FOLDER/config.cfg
