@@ -60,11 +60,11 @@ mkdir -p $PATCHDIR
 cp -r ./Radio-Patches/* $PATCHDIR/
 rm -r $PATCHDIR/README
 chown -R patchwerk:radio $PATCHDIR
-chmod -R 664 $PATCHDIR
+chmod -R 755 $PATCHDIR
 
 
 rm -r $TMPDIR
 mkdir -p $TMPDIR
 chown patchwerk:radio $TMPDIR
-chmod 664 $TMPDIR
+chmod 775 $TMPDIR
 
