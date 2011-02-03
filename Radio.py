@@ -337,6 +337,11 @@ class PureData(Pd):
         if self.Alive():
             self.log.write("Killing PureData Process")
             self.Exit()
+        #TODO: this needs to check for the old temp patch as well
+        #      and delete it if it exists
+        name  = self.patches[self.active].name
+        tempFolder = os.path.join(self.tempDir, name)
+        shutil.rmtree(tempFolder)
         self.log.write("Bye Bye")
         sys.exit(0)
     
