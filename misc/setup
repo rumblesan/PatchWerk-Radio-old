@@ -1,25 +1,24 @@
 #!/bin/sh
 
-if [ -z '$1' ] ; then
-    $env='development'
+if [ -z "$1" ] ; then
+    env=development
 else
-    $env='master'
+    env=$1
 fi
 
-if [ $env = 'master' ] ; then
+if [ $env = "master" ] ; then
     BINDIR=/usr/local/sbin/PatchWerk
     LOGDIR=/var/log/PatchWerk
     PATCHDIR=/var/PatchWerk/patches
-    TMPDIR=$PATCHDIR/temp
+    TMPDIR=/var/PatchWerk/temp
     BRANCH=master
 else
     BINDIR=/usr/local/sbin/PatchWerkTest
     LOGDIR=/var/log/PatchWerkTest
     PATCHDIR=/var/PatchWerkTest/patches
-    TMPDIR=$PATCHDIR/temp
+    TMPDIR=/var/PatchWerkTest/temp
     BRANCH=development
 fi
-
 
 
 if [ ! -d $LOGDIR ]
@@ -43,6 +42,7 @@ cp -r PatchWerk-Radio/master     $BINDIR/
 cp -r PatchWerk-Radio/Pd         $BINDIR/
 cp -r PatchWerk-Radio/config.cfg $BINDIR/
 
+
 chmod 754 $BINDIR/Radio.py
 chown -R patchwerk:radio $BINDIR
 
@@ -64,3 +64,4 @@ rm -r $TMPDIR
 mkdir -p $TMPDIR
 chown patchwerk:radio $TMPDIR
 chmod 664 $TMPDIR
+
