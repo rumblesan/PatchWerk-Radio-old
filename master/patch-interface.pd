@@ -13,10 +13,6 @@
 #X obj 342 185 inlet~;
 #X obj 273 257 outlet~;
 #X obj 364 257 outlet~;
-#X obj 124 58 inlet;
-#X obj 155 192 s;
-#X msg 170 146 \$1-control;
-#X obj 170 168 symbol;
 #X connect 0 0 1 0;
 #X connect 1 0 6 0;
 #X connect 2 0 3 0;
@@ -29,9 +25,5 @@
 #X connect 9 0 13 0;
 #X connect 10 0 2 0;
 #X connect 10 0 5 0;
-#X connect 10 0 16 0;
 #X connect 11 0 9 1;
 #X connect 11 0 8 1;
-#X connect 14 0 15 0;
-#X connect 16 0 17 0;
-#X connect 17 0 15 1;
