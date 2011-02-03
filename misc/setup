@@ -44,7 +44,7 @@ mkdir -p $PATCHDIR
 cp -r ./Radio-Patches/* $PATCHDIR/
 rm -r $PATCHDIR/README
 chown -R patchwerk:radio $PATCHDIR
-chmod -r 775 $PATCHDIR
+chmod -R 775 $PATCHDIR
 
 rm -r $SVCDIR
 mkdir -p $SVCDIR
