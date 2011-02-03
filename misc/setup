@@ -1,10 +1,26 @@
 #!/bin/sh
 
-BINDIR=/usr/local/sbin/PatchWerk
-LOGDIR=/var/log/PatchWerk
-PATCHDIR=/var/PatchWerk/patches
-SVCDIR=/etc/svc.d/PatchWerk
-TMPDIR=/var/PatchWerk/temp
+if [ -z '$1' ] ; then
+    $env='development'
+else
+    $env='master'
+fi
+
+if [ $env = 'master' ] ; then
+    BINDIR=/usr/local/sbin/PatchWerk
+    LOGDIR=/var/log/PatchWerk
+    PATCHDIR=/var/PatchWerk/patches
+    TMPDIR=$PATCHDIR/temp
+    BRANCH=master
+else
+    BINDIR=/usr/local/sbin/PatchWerkTest
+    LOGDIR=/var/log/PatchWerkTest
+    PATCHDIR=/var/PatchWerkTest/patches
+    TMPDIR=$PATCHDIR/temp
+    BRANCH=development
+fi
+
+
 
 if [ ! -d $LOGDIR ]
 then
@@ -12,10 +28,8 @@ then
 fi
 chown logger:logging $LOGDIR
 
-cd ../..
-
 cd PatchWerk-Radio
-sudo -u guy git pull origin master
+sudo -u guy git pull origin $BRANCH
 
 cd ../Radio-Patches
 sudo -u guy git pull origin master
@@ -44,15 +58,9 @@ mkdir -p $PATCHDIR
 cp -r ./Radio-Patches/* $PATCHDIR/
 rm -r $PATCHDIR/README
 chown -R patchwerk:radio $PATCHDIR
-chmod -r 664 $PATCHDIR
+chmod -R 664 $PATCHDIR
 
 rm -r $TMPDIR
 mkdir -p $TMPDIR
 chown patchwerk:radio $TMPDIR
 chmod 664 $TMPDIR
-
-rm -r $SVCDIR
-mkdir -p $SVCDIR
-cp -r ./PatchWerk-Radio/misc/service/PatchWerk/* $SVCDIR/
-chmod 744 $SVCDIR/run
-chmod 744 $SVCDIR/log/run
