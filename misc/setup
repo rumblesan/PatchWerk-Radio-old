@@ -12,12 +12,14 @@ if [ $env = "master" ] ; then
     PATCHDIR=/var/PatchWerk/patches
     TMPDIR=/var/PatchWerk/temp
     BRANCH=master
+    CONFIG=config.cfg
 else
     BINDIR=/usr/local/sbin/PatchWerkTest
     LOGDIR=/var/log/PatchWerkTest
     PATCHDIR=/var/PatchWerkTest/patches
     TMPDIR=/var/PatchWerkTest/temp
     BRANCH=development
+    CONFIG=testconfig.cfg
 fi
 
 
@@ -28,10 +30,10 @@ fi
 chown logger:logging $LOGDIR
 
 cd PatchWerk-Radio
-sudo -u guy git pull origin $BRANCH
+sudo -u guy git checkout $BRANCH
 
 cd ../Radio-Patches
-sudo -u guy git pull origin master
+sudo -u guy git checkout master
 
 cd ..
 
@@ -46,11 +48,11 @@ cp -r PatchWerk-Radio/config.cfg $BINDIR/
 chmod 754 $BINDIR/Radio.py
 chown -R patchwerk:radio $BINDIR
 
-if [ -f ./config.cfg ]
+if [ -f ./$CONFIG ]
 then
     echo using the config file here
     rm  $BINDIR/config.cfg
-    cp  ./config.cfg $BINDIR/
+    cp  ./$CONFIG $BINDIR/
 fi
 
 rm -r $PATCHDIR
@@ -59,6 +61,7 @@ cp -r ./Radio-Patches/* $PATCHDIR/
 rm -r $PATCHDIR/README
 chown -R patchwerk:radio $PATCHDIR
 chmod -R 664 $PATCHDIR
+
 
 rm -r $TMPDIR
 mkdir -p $TMPDIR
