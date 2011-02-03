@@ -4,6 +4,7 @@ BINDIR=/usr/local/sbin/PatchWerk
 LOGDIR=/var/log/PatchWerk
 PATCHDIR=/var/PatchWerk/patches
 SVCDIR=/etc/svc.d/PatchWerk
+TMPDIR=/var/PatchWerk/temp
 
 if [ ! -d $LOGDIR ]
 then
@@ -42,6 +43,13 @@ rm -r $PATCHDIR
 mkdir -p $PATCHDIR
 cp -r ./Radio-Patches/* $PATCHDIR/
 rm -r $PATCHDIR/README
+chown -R patchwerk:radio $PATCHDIR
+chmod -r 664 $PATCHDIR
+
+rm -r $TMPDIR
+mkdir -p $TMPDIR
+chown patchwerk:radio $TMPDIR
+chmod 664 $TMPDIR
 
 rm -r $SVCDIR
 mkdir -p $SVCDIR
