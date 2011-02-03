@@ -70,10 +70,10 @@ class PureData(Pd):
         
         extras           = "-alsa"
         
-        patchDir         = self.config.get('paths', 'patchDir')
-        masterDir        = self.config.get('paths', 'masterDir')
-        tempDir          = self.config.get('paths', 'tempDir')
-        path             = [patchDir, masterDir]
+        self.patchDir    = self.config.get('paths', 'patchDir')
+        self.masterDir   = self.config.get('paths', 'masterDir')
+        self.tempDir     = self.config.get('paths', 'tempDir')
+        path             = [self.masterDir]
         
         Pd.__init__(self, comPort, gui, self.patch, extra=extras, path=path)
         
