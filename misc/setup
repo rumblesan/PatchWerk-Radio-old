@@ -46,13 +46,10 @@ rm -r $PATCHDIR/README
 chown -R patchwerk:radio $PATCHDIR
 chmod -r 664 $PATCHDIR
 
-rm -r $TMPDIR
-mkdir -p $TMPDIR
-chown patchwerk:radio $TMPDIR
-chmod 664 $TMPDIR
-
 rm -r $SVCDIR
 mkdir -p $SVCDIR
 cp -r ./PatchWerk-Radio/misc/service/PatchWerk/* $SVCDIR/
 chmod 744 $SVCDIR/run
 chmod 744 $SVCDIR/log/run
+
+
