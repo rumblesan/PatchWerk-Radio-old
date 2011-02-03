@@ -4,6 +4,7 @@
 import os
 import re
 import sys
+import shutil
 import random
 import signal
 import ConfigParser
@@ -69,9 +70,10 @@ class PureData(Pd):
         
         extras           = "-alsa"
         
-        patchDir         = self.config.get('paths', 'patchDir')
-        masterDir        = self.config.get('paths', 'masterDir')
-        path             = [patchDir, masterDir]
+        self.patchDir    = self.config.get('paths', 'patchDir')
+        self.masterDir   = self.config.get('paths', 'masterDir')
+        self.tempDir     = self.config.get('paths', 'tempDir')
+        path             = [self.masterDir]
         
         Pd.__init__(self, comPort, gui, self.patch, extra=extras, path=path)
         
@@ -164,18 +166,25 @@ class PureData(Pd):
     def create_new_patch(self):
         
         self.loadError = False
+        name = self.patches[self.active].name
         
         #get a random patch from the patch folder
-        patch, path = self.get_random_patch()
-        name = self.patches[self.active].name
+        patch, folder = self.get_random_patch()
+        patchFolder   = os.path.join(self.patchDir, folder)
+        tempFolder    = os.path.join(self.tempDir, name)
+        
         self.log.write("Loading new patch for %s" % name)
         
         #update patch object in active slot
-        self.patches[self.active].patch = patch
-        self.patches[self.active].path  = path
+        self.patches[self.active].patch  = patch
+        self.patches[self.active].folder = folder
         
-        self.log.write("New Patch is %s in %s" % (patch, path))
-        self.Send(['open', patch, path])
+        #copy the patch folder into a temporary folder
+        #the patch will be opened from this location
+        shutil.copytree(patchFolder, tempFolder)
+        
+        self.log.write("New Patch is %s" % patch)
+        self.Send(['open', patch, tempFolder])
         
         #change regWait to true. We will wait untill the patch is registered
         self.regWait = True
@@ -197,10 +206,8 @@ class PureData(Pd):
         #get the name of the previously loaded patch
         previousPatch = self.patches[self.old].patch
         
-        #get the patch directory path
-        patchDir      = self.config.get('paths', 'patchDir')
         #get a list of files from the patch directory
-        dirList       = os.listdir(patchDir)
+        dirList       = os.listdir(self.patchDir)
         
         patchFound    = False
         dirFound      = False
@@ -211,15 +218,16 @@ class PureData(Pd):
             
             #keep going until a valid directory is found
             while not dirFound:
-                dataDir = os.path.join(patchDir, random.choice(dirList))
+                patchFolder = random.choice(dirList)
+                checkDir     = os.path.join(self.patchDir, patchFolder)
                 #TODO: want to put a check in here for the directory name
-                if os.path.isdir(dataDir):
+                if os.path.isdir(checkDir):
                     dirFound = True
                 else:
-                    self.log.write("Error:%s is not a valid folder" % dataDir)
+                    self.log.write("Error:%s is not a valid folder" % checkDir)
             
             #suitable folder chosen, now check for main patch inside it
-            fileList = os.listdir(dataDir)
+            fileList = os.listdir(checkDir)
             for file in fileList:
                 if self.fileMatch.search(file):
                     patchFile = file
@@ -227,7 +235,7 @@ class PureData(Pd):
                     
             
             if not mainFound:
-                self.log.write("Error:%s has no main patch" % dataDir)
+                self.log.write("Error:%s has no main patch" % checkDir)
                 dirFound = False
             elif patchFile == previousPatch:
                 self.log.write("Error:%s also the previous patch" % patchFile)
@@ -240,15 +248,15 @@ class PureData(Pd):
             if not patchFound:
                 self.log.write("Choosing again.")
         
-        return (patchFile, dataDir)
+        return (patchFile, patchFolder)
     
     def load_error(self):
         #notifies when there has been an error loading a patch
-        patch = self.patches[self.active].patch
-        path  = self.patches[self.active].path
+        patch  = self.patches[self.active].patch
+        folder = self.patches[self.active].folder
         
         self.log.write("Error:***************************************")
-        self.log.write("Error:Problem loading %s from %s" % (patch, path))
+        self.log.write("Error:Problem loading %s from %s" % (patch, folder))
         self.log.write("Error:Unloading patch and starting again")
         
         self.Send(['close', patch])
@@ -283,6 +291,11 @@ class PureData(Pd):
             self.pause(1)
             
             self.Send(['close', self.patches[self.old].patch])
+            
+            #deleting temporary file
+            tempFolder = os.path.join(self.tempDir, name)
+            shutil.rmtree(tempFolder)
+            
             self.patches[self.old].ok = False
         else:
             self.log.write("%s doesn't seem to be running" % name)
@@ -324,6 +337,11 @@ class PureData(Pd):
         if self.Alive():
             self.log.write("Killing PureData Process")
             self.Exit()
+        #TODO: this needs to check for the old temp patch as well
+        #      and delete it if it exists
+        name  = self.patches[self.active].name
+        tempFolder = os.path.join(self.tempDir, name)
+        shutil.rmtree(tempFolder)
         self.log.write("Bye Bye")
         sys.exit(0)
     

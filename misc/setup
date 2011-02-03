@@ -1,55 +1,82 @@
 #!/bin/sh
 
-BINDIR=/usr/local/sbin/PatchWerk
-LOGDIR=/var/log/PatchWerk
-PATCHDIR=/var/PatchWerk/patches
-SVCDIR=/etc/svc.d/PatchWerk
-TMPDIR=/var/PatchWerk/temp
+#meant to be run from a directory containing the
+#PatchWerk-Radio and Radio-Patches repositories
 
+if [ -z "$1" ] ; then
+    env=development
+else
+    env=$1
+fi
+
+#set the variables depending on whether a live or a test setup is wanted
+if [ $env = "master" ] ; then
+    BINDIR=/usr/local/sbin/PatchWerk
+    LOGDIR=/var/log/PatchWerk
+    PATCHDIR=/var/PatchWerk/patches
+    TMPDIR=/var/PatchWerk/temp
+    BRANCH=master
+    CONFIG=config.cfg
+else
+    BINDIR=/usr/local/sbin/PatchWerkTest
+    LOGDIR=/var/log/PatchWerkTest
+    PATCHDIR=/var/PatchWerkTest/patches
+    TMPDIR=/var/PatchWerkTest/temp
+    BRANCH=development
+    CONFIG=testconfig.cfg
+fi
+
+#checkout the correct branches
+cd PatchWerk-Radio
+sudo -u guy git checkout $BRANCH
+
+cd ../Radio-Patches
+sudo -u guy git checkout master
+
+
+#make the lof directory if it doesn't exist
 if [ ! -d $LOGDIR ]
 then
     mkdir $LOGDIR
 fi
-chown logger:logging $LOGDIR
-
-cd ../..
-
-cd PatchWerk-Radio
-sudo -u guy git pull origin master
-
-cd ../Radio-Patches
-sudo -u guy git pull origin master
+chown -R logger:logging $LOGDIR
 
 cd ..
 
+# Clear out the binary dir and then copy the correct files into it
 rm -r $BINDIR
 mkdir -p $BINDIR
 cp -r PatchWerk-Radio/Radio.py   $BINDIR/
 cp -r PatchWerk-Radio/master     $BINDIR/
 cp -r PatchWerk-Radio/Pd         $BINDIR/
 cp -r PatchWerk-Radio/config.cfg $BINDIR/
-
+#give files the correct permissions
 chmod 754 $BINDIR/Radio.py
 chown -R patchwerk:radio $BINDIR
 
-if [ -f ./config.cfg ]
+#if the config file exists in the same directory
+#copy it to the bindir
+if [ -f ./$CONFIG ]
 then
     echo using the config file here
     rm  $BINDIR/config.cfg
-    cp  ./config.cfg $BINDIR/
+    cp  ./$CONFIG $BINDIR/
 fi
 
+# Clear out the patch directory, then copy the new patches back into it
 rm -r $PATCHDIR
 mkdir -p $PATCHDIR
 cp -r ./Radio-Patches/* $PATCHDIR/
 rm -r $PATCHDIR/README
+#fix permissions
 chown -R patchwerk:radio $PATCHDIR
-chmod -R 775 $PATCHDIR
+chmod -R 755 $PATCHDIR
 
-rm -r $SVCDIR
-mkdir -p $SVCDIR
-cp -r ./PatchWerk-Radio/misc/service/PatchWerk/* $SVCDIR/
-chmod 744 $SVCDIR/run
-chmod 744 $SVCDIR/log/run
+#clear out the temp directory
+rm -r $TMPDIR
+mkdir -p $TMPDIR
+chown patchwerk:radio $TMPDIR
+chmod 775 $TMPDIR
+
 
 
