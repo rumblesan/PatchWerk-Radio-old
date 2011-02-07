@@ -7,22 +7,109 @@ import sys
 import shutil
 import random
 import signal
+import MySQLdb
 import ConfigParser
 from Pd import Pd
 from time import time, strftime
+
+class DbInterface():
+    
+    def __init__(self, user, passwd, db, host="localhost"):
+        try:
+            self.db = MySQLdb.connect(host=host,
+                                      user=user,
+                                      passwd=passwd,
+                                      db=db)
+        except MySQLdb.Error, e:
+            print "Error %d: %s" %(e.args[0], e.args[1])
+            sys.exit(1)
+        
+        self.logging   = "logs"
+        self.control   = "control"
+        self.patchInfo = "patchInfo"
+        self.playing   = "playing"
+        
+    def write_log(self, logEntry):
+        timestamp, message = logEntry
+        cursor = self.db.cursor()
+        query = """INSERT INTO %s
+                   (message)
+                   VALUES ("%s")
+        """ % (self.logging, message)
+        cursor.execute(query)
+        cursor.close()
+
+        
+    def control_state(self):
+        cursor = self.db.cursor()
+        query = ["SELECT state FROM %s" % self.control]
+        cursor.execute(" ".join(query))
+        row = cursor.fetchone()
+        state = row[0]
+        cursor.close()
+        return state
+    
+    def patch_plays(self, patchName):
+        cursor = self.db.cursor()
+        query = ["SELECT name, playNum FROM %s" % self.patchInfo]
+        query.append("WHERE name = %s" % patchName)
+        cursor.execute(" ".join(query))
+        row = cursor.fetchone()
+        
+        if row == 0:
+            query = ["INSERT INTO %s" % self.patchInfo]
+            query.append("(name,playNum)")
+            query.append("VALUES")
+            query.append("(%s,%i)" % (patchName, 1))
+        else:
+            playNum = row[1] + 1
+            query = ["UPDATE %s" % self.patchInfo]
+            query.append("SET playNum = '%i'" % playNum)
+            query.append("WHERE %s.name = '%s'" % (self.patchInfo, patchName))
+        
+        cursor.execute(" ".join(query))
+        cursor.close()
+    
+    def currently_playing(self, patchName):
+        cursor = self.db.cursor()
+        query = ["SELECT current FROM %s" % self.playing]
+        cursor.execute(" ".join(query))
+        row = cursor.fetchone()
+        if row == 0:
+            query = ["INSERT INTO %s" % self.patchInfo]
+            query.append("(current,previous)")
+            query.append("VALUES")
+            query.append("(%s,%s)" % (patchName, "none"))
+        else:
+            current  = row[0]
+            previous = row[1]
+            query = ["UPDATE %s" % self.patchInfo]
+            query.append("SET current = '%s'," % patchName)
+            query.append("SET playNum = '%s'" % current)
+            query.append("WHERE %s.name = '%s'" % (self.patchInfo, current))
+            query.append("AND   %s.name = '%s'" % (self.patchInfo, previous))
+        cursor.execute(" ".join(query))
+        cursor.close()
+    
 
 
 class LoggingObj():
     #class to handle logging. prepends timestamp to data then prints it out
     
-    def __init__(self):
+    def __init__(self, logdb=None):
         self.header()
+        self.logdb = logdb
 
     def write(self, logLine):
-        print "%s   %s" % (self.timeStamp(), logLine)
+        output = (self.timeStamp(), logLine)
+        if self.logdb:
+            print "%s   %s" % output
+            self.logdb.write_log(output)
+        else:
+            print "%s   %s" % output
     
     def timeStamp(self):
-        return strftime("%Y%m%d-%H:%M:%S")
+        return strftime("%Y%m%d %H:%M:%S")
     
     def header(self):
         print "\n*******************\nStartingUp\n*******************\n"
@@ -44,10 +131,16 @@ class PureData(Pd):
         
         self.patch   = 'masterPatch.pd'
         
-        self.log         = LoggingObj()
-        
         self.config      = ConfigParser.SafeConfigParser()
         self.config.read(configFile)
+        
+        dbUser           = self.config.get('database', 'user')
+        dbPasswd         = self.config.get('database', 'password')
+        dbHost           = self.config.get('database', 'host')
+        dbName           = self.config.get('database', 'dbname')
+        self.db          = DbInterface(dbUser, dbPasswd, dbName, dbHost)
+        
+        self.log         = LoggingObj(self.db)
         
         self.active      = 2
         self.old         = 1
