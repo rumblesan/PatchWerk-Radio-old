@@ -42,8 +42,8 @@ class DbInterface():
         
     def control_state(self):
         cursor = self.db.cursor()
-        query = ["SELECT state FROM %s" % self.control]
-        cursor.execute(" ".join(query))
+        query = "SELECT state FROM %s" % self.control
+        cursor.execute(query)
         row = cursor.fetchone()
         state = row[0]
         cursor.close()
@@ -51,46 +51,50 @@ class DbInterface():
     
     def patch_plays(self, patchName):
         cursor = self.db.cursor()
-        query = ["SELECT name, playNum FROM %s" % self.patchInfo]
-        query.append("WHERE name = %s" % patchName)
-        cursor.execute(" ".join(query))
+        query = """SELECT name, playNum
+                   FROM %s
+                   WHERE name = %s
+        """ % (self.patchInfo, patchName)
+        cursor.execute(query)
         row = cursor.fetchone()
         
         if row == 0:
-            query = ["INSERT INTO %s" % self.patchInfo]
-            query.append("(name,playNum)")
-            query.append("VALUES")
-            query.append("(%s,%i)" % (patchName, 1))
+            query = """INSERT INTO %s
+                       (name, playNum)
+                       VALUES ("%s",%i)
+            """ % (self.patchInfo, patchName, 1)
         else:
             playNum = row[1] + 1
-            query = ["UPDATE %s" % self.patchInfo]
-            query.append("SET playNum = '%i'" % playNum)
-            query.append("WHERE %s.name = '%s'" % (self.patchInfo, patchName))
+            query = """UPDATE %s
+                       SET playNum = %i
+                       WHERE %s.name = '%s'
+            """ % (self.patchInfo, playNum, self.patchInfo, patchName)
         
-        cursor.execute(" ".join(query))
+        cursor.execute(query)
         cursor.close()
     
     def currently_playing(self, patchName):
         cursor = self.db.cursor()
-        query = ["SELECT current FROM %s" % self.playing]
-        cursor.execute(" ".join(query))
+        query = "SELECT current FROM %s" % self.playing
+        cursor.execute(query)
         row = cursor.fetchone()
         if row == 0:
-            query = ["INSERT INTO %s" % self.patchInfo]
-            query.append("(current,previous)")
-            query.append("VALUES")
-            query.append("(%s,%s)" % (patchName, "none"))
+            query = """INSERT INTO %s
+                       (current, previous)
+                       VALUES ("%s","%s")
+            """ % (self.patchInfo, patchName, "none")
         else:
             current  = row[0]
             previous = row[1]
-            query = ["UPDATE %s" % self.patchInfo]
-            query.append("SET current = '%s'," % patchName)
-            query.append("SET playNum = '%s'" % current)
-            query.append("WHERE %s.name = '%s'" % (self.patchInfo, current))
-            query.append("AND   %s.name = '%s'" % (self.patchInfo, previous))
-        cursor.execute(" ".join(query))
+            query = """UPDATE %s
+                       SET current = "%s"
+                       SET previous = "%s"
+                       WHERE name = "%s"
+                       AND   name = "%s"
+            """ % (self.patchInfo, patchName, current, current, previous)
+
+        cursor.execute(query)
         cursor.close()
-    
 
 
 class LoggingObj():
