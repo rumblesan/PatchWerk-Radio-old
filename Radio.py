@@ -253,6 +253,12 @@ class PureData(Pd):
         self.log.write("Attempting connection to Icecast")
         self.Send(["stream", "connect", 1])
         
+    def control_check(self):
+        self.log.write("Checking control state")
+        while self.db.control_state() == "pause":
+            self.log.write("Control State is paused. Not Loading patch")
+            self.log.write("Pausing for 60 seconds")
+            self.pause(60)
     
     def switch_patch(self):
         #change the active patch number
@@ -486,6 +492,9 @@ def main(args):
     puredata.streaming_setup()
     
     while True:
+        #check to see if the control state is paused or not
+        puredata.control_check()
+        
         #switch which patch is active assuming not in error state
         if not puredata.loadError:
             puredata.switch_patch()
