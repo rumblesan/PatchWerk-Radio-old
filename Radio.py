@@ -123,10 +123,28 @@ class SubPatch():
     #Class for holding information about sub patches
     
     def __init__(self, number):
-        self.name   = "patch%i" % number
-        self.patch  = ""
-        self.pdNum  = 0
-        self.ok     = False
+        self.name    = "patch%i" % number
+        self.folder  = ""
+        self.patch   = ""
+        self.pdNum   = 0
+        self.ok      = False
+        self.title   = ""
+        self.author  = ""
+        self.info    = ""
+        self.tempDir = ""
+        
+    def read_info_file(self):
+        infoFile = os.path.join(self.tempDir, "info")
+        if not os.path.isfile(infoFile):
+            self.title  = ""
+            self.author = ""
+            self.info   = ""
+        else:
+            config      = ConfigParser.SafeConfigParser()
+            config.read(infoFile)
+            self.title  = self.config.get('info', 'title')
+            self.author = self.config.get('info', 'author')
+            self.info   = self.config.get('info', 'info')
     
 
 class PureData(Pd):
@@ -279,12 +297,16 @@ class PureData(Pd):
         self.log.write("Loading new patch for %s" % name)
         
         #update patch object in active slot
-        self.patches[self.active].patch  = patch
-        self.patches[self.active].folder = folder
+        self.patches[self.active].patch   = patch
+        self.patches[self.active].folder  = folder
+        self.patches[self.active].tempDir = tempFolder
         
         #copy the patch folder into a temporary folder
         #the patch will be opened from this location
         shutil.copytree(patchFolder, tempFolder)
+        
+        #read the data in the new patch info file
+        self.patches[self.active].read_info_file()
         
         self.log.write("New Patch is %s" % patch)
         self.Send(['open', patch, tempFolder])
