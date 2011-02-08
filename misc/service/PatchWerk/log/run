@@ -1,7 +1,0 @@
-#!/bin/sh
-
-PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
-
-LOGFOLDER=/var/log/PatchWerk
-
-exec setuidgid logger multilog $LOGFOLDER
