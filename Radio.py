@@ -53,7 +53,7 @@ class DbInterface():
         cursor = self.db.cursor()
         query = """SELECT name, playNum
                    FROM %s
-                   WHERE name = %s
+                   WHERE name = "%s"
         """ % (self.patchInfo, patchName)
         cursor.execute(query)
         row = cursor.fetchone()
@@ -67,8 +67,8 @@ class DbInterface():
             playNum = row[1] + 1
             query = """UPDATE %s
                        SET playNum = %i
-                       WHERE %s.name = '%s'
-            """ % (self.patchInfo, playNum, self.patchInfo, patchName)
+                       WHERE name = "%s"
+            """ % (self.patchInfo, playNum, patchName)
         
         cursor.execute(query)
         cursor.close()
