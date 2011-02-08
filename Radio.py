@@ -26,7 +26,7 @@ class DbInterface():
         
         self.logging   = "logs"
         self.control   = "control"
-        self.patchInfo = "patchInfo"
+        self.patchInfo = "patchinfo"
         self.playing   = "playing"
         
     def write_log(self, logEntry):
@@ -57,14 +57,14 @@ class DbInterface():
         """ % (self.patchInfo, patchName)
         cursor.execute(query)
         row = cursor.fetchone()
-        
-        if row == 0:
+        if row == None:
             query = """INSERT INTO %s
                        (name, playNum)
                        VALUES ("%s",%i)
             """ % (self.patchInfo, patchName, 1)
         else:
-            playNum = row[1] + 1
+            playNum = int(row[1])
+            playNum += 1
             query = """UPDATE %s
                        SET playNum = %i
                        WHERE name = "%s"
@@ -75,18 +75,17 @@ class DbInterface():
     
     def currently_playing(self, patchName):
         cursor = self.db.cursor()
-        query = "SELECT current FROM %s" % self.playing
+        query = "SELECT current,previous FROM %s" % self.playing
         cursor.execute(query)
         row = cursor.fetchone()
         current  = row[0]
         previous = row[1]
         query = """UPDATE %s
-                   SET current = "%s"
-                   SET previous = "%s"
-                   WHERE name = "%s"
-                   AND   name = "%s"
-        """ % (self.patchInfo, patchName, current, current, previous)
-
+                   SET current = "%s",
+                       previous = "%s"
+                   WHERE current = "%s"
+                   AND   previous = "%s"
+        """ % (self.playing, patchName, current, current, previous)
         cursor.execute(query)
         cursor.close()
 
@@ -101,7 +100,6 @@ class LoggingObj():
     def write(self, logLine):
         output = (self.timeStamp(), logLine)
         if self.logdb:
-            print "%s   %s" % output
             self.logdb.write_log(output)
         else:
             print "%s   %s" % output
@@ -132,9 +130,9 @@ class SubPatch():
         if os.path.isfile(infoFile):
             config      = ConfigParser.SafeConfigParser()
             config.read(infoFile)
-            self.title  = self.config.get('info', 'title')
-            self.author = self.config.get('info', 'author')
-            self.info   = self.config.get('info', 'info')
+            self.title  = config.get('info', 'title')
+            self.author = config.get('info', 'author')
+            self.info   = config.get('info', 'info')
     
 
 class PureData(Pd):
