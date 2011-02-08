@@ -122,18 +122,14 @@ class SubPatch():
         self.patch   = ""
         self.pdNum   = 0
         self.ok      = False
-        self.title   = ""
-        self.author  = ""
+        self.title   = "Untitled"
+        self.author  = "Unknown"
         self.info    = ""
         self.tempDir = ""
         
     def read_info_file(self):
         infoFile = os.path.join(self.tempDir, "info")
-        if not os.path.isfile(infoFile):
-            self.title  = ""
-            self.author = ""
-            self.info   = ""
-        else:
+        if os.path.isfile(infoFile):
             config      = ConfigParser.SafeConfigParser()
             config.read(infoFile)
             self.title  = self.config.get('info', 'title')
@@ -384,11 +380,8 @@ class PureData(Pd):
         #turn on DSP in new patch
         self.log.write("Turning on %s DSP" % self.patches[self.active].name)
         self.Send(["coms",self.active, 'dsp', 1])
-        if self.patches[self.active].title != "":
-            self.db.patch_plays(self.patches[self.active].title)
-            self.db.currently_playing(self.patches[self.active].title)
-        else:
-            self.db.currently_playing("No Info")
+        self.db.patch_plays(self.patches[self.active].title)
+        self.db.currently_playing(self.patches[self.active].title)
         self.pause(1)
     
     def crossfade(self):
@@ -401,6 +394,18 @@ class PureData(Pd):
         
         #pause while the fade occours
         self.pause(self.fadeTime)
+    
+    def update_meta(self):
+        #update stream meta data with patch info
+        self.log.write("Updating stream META data")
+        meta                = {}
+        meta['ARTIST']      = self.patches[self.active].author
+        meta['TITLE']       = self.patches[self.active].title
+        meta['DESCRIPTION'] = self.patches[self.active].info
+        
+        #send stream META Data
+        for tag, info in meta.iteritems():
+            self.Send(["stream", "meta", tag, info])
     
     def kill_old_patch(self):
         #disconnect old patch from master patch and then del the object
@@ -530,6 +535,9 @@ def main(args):
         else:
             #turn the DSP in the new patch on
             puredata.activate_patch()
+            
+            #update stream META data
+            puredata.update_meta()
             
             #fade over to new patch
             puredata.crossfade()
