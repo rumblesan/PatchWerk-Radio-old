@@ -7,22 +7,105 @@ import sys
 import shutil
 import random
 import signal
+import MySQLdb
 import ConfigParser
 from Pd import Pd
 from time import time, strftime
+
+class DbInterface():
+    
+    def __init__(self, user, passwd, db, host="localhost"):
+        try:
+            self.db = MySQLdb.connect(host=host,
+                                      user=user,
+                                      passwd=passwd,
+                                      db=db)
+        except MySQLdb.Error, e:
+            print "Error %d: %s" %(e.args[0], e.args[1])
+            sys.exit(1)
+        
+        self.logging   = "logs"
+        self.control   = "control"
+        self.patchInfo = "patchinfo"
+        self.playing   = "playing"
+        
+    def write_log(self, logEntry):
+        timestamp, message = logEntry
+        cursor = self.db.cursor()
+        query = """INSERT INTO %s
+                   (message)
+                   VALUES ("%s")
+        """ % (self.logging, message)
+        cursor.execute(query)
+        cursor.close()
+
+        
+    def control_state(self):
+        cursor = self.db.cursor()
+        query = "SELECT state FROM %s" % self.control
+        cursor.execute(query)
+        row = cursor.fetchone()
+        state = row[0]
+        cursor.close()
+        return state
+    
+    def patch_plays(self, patchName):
+        cursor = self.db.cursor()
+        query = """SELECT name, playNum
+                   FROM %s
+                   WHERE name = "%s"
+        """ % (self.patchInfo, patchName)
+        cursor.execute(query)
+        row = cursor.fetchone()
+        if row == None:
+            query = """INSERT INTO %s
+                       (name, playNum)
+                       VALUES ("%s",%i)
+            """ % (self.patchInfo, patchName, 1)
+        else:
+            playNum = int(row[1])
+            playNum += 1
+            query = """UPDATE %s
+                       SET playNum = %i
+                       WHERE name = "%s"
+            """ % (self.patchInfo, playNum, patchName)
+        
+        cursor.execute(query)
+        cursor.close()
+    
+    def currently_playing(self, patchName):
+        cursor = self.db.cursor()
+        query = "SELECT current,previous FROM %s" % self.playing
+        cursor.execute(query)
+        row = cursor.fetchone()
+        current  = row[0]
+        previous = row[1]
+        query = """UPDATE %s
+                   SET current = "%s",
+                       previous = "%s"
+                   WHERE current = "%s"
+                   AND   previous = "%s"
+        """ % (self.playing, patchName, current, current, previous)
+        cursor.execute(query)
+        cursor.close()
 
 
 class LoggingObj():
     #class to handle logging. prepends timestamp to data then prints it out
     
-    def __init__(self):
+    def __init__(self, logdb=None):
         self.header()
+        self.logdb = logdb
 
     def write(self, logLine):
-        print "%s   %s" % (self.timeStamp(), logLine)
+        output = (self.timeStamp(), logLine)
+        if self.logdb:
+            self.logdb.write_log(output)
+        else:
+            print "%s   %s" % output
     
     def timeStamp(self):
-        return strftime("%Y%m%d-%H:%M:%S")
+        return strftime("%Y%m%d %H:%M:%S")
     
     def header(self):
         print "\n*******************\nStartingUp\n*******************\n"
@@ -32,10 +115,24 @@ class SubPatch():
     #Class for holding information about sub patches
     
     def __init__(self, number):
-        self.name   = "patch%i" % number
-        self.patch  = ""
-        self.pdNum  = 0
-        self.ok     = False
+        self.name    = "patch%i" % number
+        self.folder  = ""
+        self.patch   = ""
+        self.pdNum   = 0
+        self.ok      = False
+        self.title   = "Untitled"
+        self.author  = "Unknown"
+        self.info    = ""
+        self.tempDir = ""
+        
+    def read_info_file(self):
+        infoFile = os.path.join(self.tempDir, "info")
+        if os.path.isfile(infoFile):
+            config      = ConfigParser.SafeConfigParser()
+            config.read(infoFile)
+            self.title  = config.get('info', 'title')
+            self.author = config.get('info', 'author')
+            self.info   = config.get('info', 'info')
     
 
 class PureData(Pd):
@@ -44,10 +141,16 @@ class PureData(Pd):
         
         self.patch   = 'masterPatch.pd'
         
-        self.log         = LoggingObj()
-        
         self.config      = ConfigParser.SafeConfigParser()
         self.config.read(configFile)
+        
+        dbUser           = self.config.get('database', 'user')
+        dbPasswd         = self.config.get('database', 'password')
+        dbHost           = self.config.get('database', 'host')
+        dbName           = self.config.get('database', 'dbname')
+        self.db          = DbInterface(dbUser, dbPasswd, dbName, dbHost)
+        
+        self.log         = LoggingObj(self.db)
         
         self.active      = 2
         self.old         = 1
@@ -156,6 +259,12 @@ class PureData(Pd):
         self.log.write("Attempting connection to Icecast")
         self.Send(["stream", "connect", 1])
         
+    def control_check(self):
+        self.log.write("Checking control state")
+        while self.db.control_state() == "pause":
+            self.log.write("Control State is paused. Not Loading patch")
+            self.log.write("Pausing for 60 seconds")
+            self.pause(60)
     
     def switch_patch(self):
         #change the active patch number
@@ -176,12 +285,16 @@ class PureData(Pd):
         self.log.write("Loading new patch for %s" % name)
         
         #update patch object in active slot
-        self.patches[self.active].patch  = patch
-        self.patches[self.active].folder = folder
+        self.patches[self.active].patch   = patch
+        self.patches[self.active].folder  = folder
+        self.patches[self.active].tempDir = tempFolder
         
         #copy the patch folder into a temporary folder
         #the patch will be opened from this location
         shutil.copytree(patchFolder, tempFolder)
+        
+        #read the data in the new patch info file
+        self.patches[self.active].read_info_file()
         
         self.log.write("New Patch is %s" % patch)
         self.Send(['open', patch, tempFolder])
@@ -265,6 +378,8 @@ class PureData(Pd):
         #turn on DSP in new patch
         self.log.write("Turning on %s DSP" % self.patches[self.active].name)
         self.Send(["coms",self.active, 'dsp', 1])
+        self.db.patch_plays(self.patches[self.active].title)
+        self.db.currently_playing(self.patches[self.active].title)
         self.pause(1)
     
     def crossfade(self):
@@ -277,6 +392,18 @@ class PureData(Pd):
         
         #pause while the fade occours
         self.pause(self.fadeTime)
+    
+    def update_meta(self):
+        #update stream meta data with patch info
+        self.log.write("Updating stream META data")
+        meta                = {}
+        meta['ARTIST']      = self.patches[self.active].author
+        meta['TITLE']       = self.patches[self.active].title
+        meta['DESCRIPTION'] = self.patches[self.active].info
+        
+        #send stream META Data
+        for tag, info in meta.iteritems():
+            self.Send(["stream", "meta", tag, info])
     
     def kill_old_patch(self):
         #disconnect old patch from master patch and then del the object
@@ -389,6 +516,9 @@ def main(args):
     puredata.streaming_setup()
     
     while True:
+        #check to see if the control state is paused or not
+        puredata.control_check()
+        
         #switch which patch is active assuming not in error state
         if not puredata.loadError:
             puredata.switch_patch()
@@ -403,6 +533,9 @@ def main(args):
         else:
             #turn the DSP in the new patch on
             puredata.activate_patch()
+            
+            #update stream META data
+            puredata.update_meta()
             
             #fade over to new patch
             puredata.crossfade()
