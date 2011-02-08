@@ -78,20 +78,14 @@ class DbInterface():
         query = "SELECT current FROM %s" % self.playing
         cursor.execute(query)
         row = cursor.fetchone()
-        if row == 0:
-            query = """INSERT INTO %s
-                       (current, previous)
-                       VALUES ("%s","%s")
-            """ % (self.patchInfo, patchName, "none")
-        else:
-            current  = row[0]
-            previous = row[1]
-            query = """UPDATE %s
-                       SET current = "%s"
-                       SET previous = "%s"
-                       WHERE name = "%s"
-                       AND   name = "%s"
-            """ % (self.patchInfo, patchName, current, current, previous)
+        current  = row[0]
+        previous = row[1]
+        query = """UPDATE %s
+                   SET current = "%s"
+                   SET previous = "%s"
+                   WHERE name = "%s"
+                   AND   name = "%s"
+        """ % (self.patchInfo, patchName, current, current, previous)
 
         cursor.execute(query)
         cursor.close()
@@ -390,6 +384,11 @@ class PureData(Pd):
         #turn on DSP in new patch
         self.log.write("Turning on %s DSP" % self.patches[self.active].name)
         self.Send(["coms",self.active, 'dsp', 1])
+        if self.patches[self.active].title != "":
+            self.db.patch_plays(self.patches[self.active].title)
+            self.db.currently_playing(self.patches[self.active].title)
+        else:
+            self.db.currently_playing("No Info")
         self.pause(1)
     
     def crossfade(self):
