@@ -56,23 +56,23 @@ class DbInterface():
     
     def patch_plays(self, patchName):
         cursor = self.db.cursor()
-        query = """SELECT name, playNum
+        query = """SELECT patchname, playnum
                    FROM %s
-                   WHERE name = "%s"
+                   WHERE patchname = "%s"
                 """ % (self.patchPlays, patchName)
         cursor.execute(query)
         row = cursor.fetchone()
         if row == None:
             query = """INSERT INTO %s
-                       (name, playNum)
+                       (patchname, playnum)
                        VALUES ("%s",%i)
                     """ % (self.patchPlays, patchName, 1)
         else:
             playNum = int(row[1])
             playNum += 1
             query = """UPDATE %s
-                       SET playNum = %i
-                       WHERE name = "%s"
+                       SET playnum = %i
+                       WHERE patchname = "%s"
                     """ % (self.patchPlays, playNum, patchName)
         
         cursor.execute(query)
@@ -94,7 +94,7 @@ class DbInterface():
     
     def current_state(self, state):
         cursor = self.db.cursor()
-        query = """UPDATE %S
+        query = """UPDATE %s
                    SET value = "%s"
                    """ % (self.radioInfo, state)
         cursor.execute(query)
@@ -230,7 +230,7 @@ class PureData(Pd):
         #everything is loaded fine. set status to up in db
         #and turn on PD DSP
         self.db.current_state("up")
-        puredata.Send(['dsp', 1])
+        self.Send(['dsp', 1])
     
     def streaming_setup(self):
         #send a message to the streaming controls in the master patch
