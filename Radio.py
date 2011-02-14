@@ -525,6 +525,9 @@ def main(args):
     
     #register handler for SIGTERM
     signal.signal(signal.SIGTERM, puredata.terminate)
+
+    #register handler for SIGTERM
+    signal.signal(signal.SIGINT, puredata.terminate)
     
     #check that pure data is running fine
     puredata.check_alive()
