@@ -229,7 +229,7 @@ class PureData(Pd):
     def all_ok(self):
         #everything is loaded fine. set status to up in db
         #and turn on PD DSP
-        self.db.current_state(up)
+        self.db.current_state("up")
         puredata.Send(['dsp', 1])
     
     def streaming_setup(self):
@@ -490,7 +490,7 @@ class PureData(Pd):
         shutil.rmtree(tempFolder)
         
         #tell DB that program is down
-        self.db.current_state(down)
+        self.db.current_state("down")
         
         self.log.write("Bye Bye")
         sys.exit(0)
