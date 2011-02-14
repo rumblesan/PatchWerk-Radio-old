@@ -18,9 +18,9 @@ if [ $env = "master" ] ; then
     BRANCH=master
     CONFIG=config.cfg
 else
-    BINDIR=/usr/local/sbin/PatchWerkTest
-    LOGDIR=/var/log/PatchWerkTest
-    PATCHDIR=/var/PatchWerkTest/patches
+    BINDIR=/usr/local/sbin/TestPatchWerk
+    LOGDIR=/var/log/TestPatchWerk
+    PATCHDIR=/var/TestPatchWerk/patches
     TMPDIR=/var/PatchWerkTest/temp
     BRANCH=development
     CONFIG=testconfig.cfg
@@ -33,13 +33,6 @@ sudo -u guy git checkout $BRANCH
 cd ../Radio-Patches
 sudo -u guy git checkout master
 
-
-#make the lof directory if it doesn't exist
-if [ ! -d $LOGDIR ]
-then
-    mkdir $LOGDIR
-fi
-chown -R logger:logging $LOGDIR
 
 cd ..
 
