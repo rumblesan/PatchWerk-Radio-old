@@ -24,10 +24,13 @@ class DbInterface():
             print "Error %d: %s" %(e.args[0], e.args[1])
             sys.exit(1)
         
-        self.logging   = "logs"
-        self.control   = "control"
-        self.patchInfo = "patchinfo"
-        self.playing   = "playing"
+        self.logging      = "logs"
+        
+        self.patchInfo    = "patchinfo"
+        self.patchPlays   = "patchplays"
+        
+        self.radioControl = "radiocontrol"
+        self.radioInfo    = "radioinfo"
         
     def write_log(self, logEntry):
         timestamp, message = logEntry
@@ -35,14 +38,16 @@ class DbInterface():
         query = """INSERT INTO %s
                    (message)
                    VALUES ("%s")
-        """ % (self.logging, message)
+                """ % (self.logging, message)
         cursor.execute(query)
         cursor.close()
 
         
-    def control_state(self):
+    def loading_state(self):
         cursor = self.db.cursor()
-        query = "SELECT state FROM %s" % self.control
+        query = """SELECT status FROM %s
+                   WHERE control = 'loading'
+                """ % self.radioControl
         cursor.execute(query)
         row = cursor.fetchone()
         state = row[0]
@@ -54,42 +59,48 @@ class DbInterface():
         query = """SELECT name, playNum
                    FROM %s
                    WHERE name = "%s"
-        """ % (self.patchInfo, patchName)
+                """ % (self.patchPlays, patchName)
         cursor.execute(query)
         row = cursor.fetchone()
         if row == None:
             query = """INSERT INTO %s
                        (name, playNum)
                        VALUES ("%s",%i)
-            """ % (self.patchInfo, patchName, 1)
+                    """ % (self.patchPlays, patchName, 1)
         else:
             playNum = int(row[1])
             playNum += 1
             query = """UPDATE %s
                        SET playNum = %i
                        WHERE name = "%s"
-            """ % (self.patchInfo, playNum, patchName)
+                    """ % (self.patchPlays, playNum, patchName)
         
         cursor.execute(query)
         cursor.close()
     
-    def currently_playing(self, patchName):
+    def currently_playing(self, current, previous):
         cursor = self.db.cursor()
-        query = "SELECT current,previous FROM %s" % self.playing
-        cursor.execute(query)
-        row = cursor.fetchone()
-        current  = row[0]
-        previous = row[1]
         query = """UPDATE %s
-                   SET current = "%s",
-                       previous = "%s"
-                   WHERE current = "%s"
-                   AND   previous = "%s"
-        """ % (self.playing, patchName, current, current, previous)
+                   SET value = "%s"
+                   WHERE info = "current"
+        """ % (self.radioInfo, current)
+        cursor.execute(query)
+        query = """UPDATE %s
+                   SET value = "%s"
+                   WHERE info = "previous"
+        """ % (self.radioInfo, previous)
         cursor.execute(query)
         cursor.close()
-
-
+    
+    def current_state(self, state):
+        cursor = self.db.cursor()
+        query = """UPDATE %S
+                   SET value = "%s"
+                   """ % (self.radioInfo, state)
+        cursor.execute(query)
+        cursor.close()
+    
+    
 class LoggingObj():
     #class to handle logging. prepends timestamp to data then prints it out
     
@@ -215,6 +226,12 @@ class PureData(Pd):
         while time() - start < pauseLength:
             self.Update()
     
+    def all_ok(self):
+        #everything is loaded fine. set status to up in db
+        #and turn on PD DSP
+        self.db.current_state(up)
+        puredata.Send(['dsp', 1])
+    
     def streaming_setup(self):
         #send a message to the streaming controls in the master patch
         self.log.write("Setting up streaming")
@@ -261,8 +278,8 @@ class PureData(Pd):
         
     def control_check(self):
         self.log.write("Checking control state")
-        while self.db.control_state() == "pause":
-            self.log.write("Control State is paused. Not Loading patch")
+        while self.db.loading_state() != "on":
+            self.log.write("Loading patches is turned off")
             self.log.write("Pausing for 60 seconds")
             self.pause(60)
     
@@ -379,7 +396,9 @@ class PureData(Pd):
         self.log.write("Turning on %s DSP" % self.patches[self.active].name)
         self.Send(["coms",self.active, 'dsp', 1])
         self.db.patch_plays(self.patches[self.active].title)
-        self.db.currently_playing(self.patches[self.active].title)
+        current  = self.patches[self.active].title
+        previous = self.patches[self.old].title
+        self.db.currently_playing(current, previous)
         self.pause(1)
     
     def crossfade(self):
@@ -469,6 +488,10 @@ class PureData(Pd):
         name  = self.patches[self.active].name
         tempFolder = os.path.join(self.tempDir, name)
         shutil.rmtree(tempFolder)
+        
+        #tell DB that program is down
+        self.db.current_state(down)
+        
         self.log.write("Bye Bye")
         sys.exit(0)
     
@@ -509,8 +532,8 @@ def main(args):
     #check that Python and PD are connected
     puredata.check_network()
     
-    #Turn on DSP for pure data
-    puredata.Send(['dsp', 1])
+    #register status with DB and turn DSP on
+    puredata.all_ok()
     
     #start streaming
     puredata.streaming_setup()
