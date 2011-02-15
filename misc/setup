@@ -11,20 +11,20 @@ fi
 
 #set the variables depending on whether a live or a test setup is wanted
 if [ $env = "master" ] ; then
-    BINDIR=/usr/local/sbin/PatchWerk
-    LOGDIR=/var/log/PatchWerk
-    PATCHDIR=/var/PatchWerk/patches
-    TMPDIR=/var/PatchWerk/temp
+    INSTNAME=PatchWerk
     BRANCH=master
     CONFIG=config.cfg
 else
-    BINDIR=/usr/local/sbin/TestPatchWerk
-    LOGDIR=/var/log/TestPatchWerk
-    PATCHDIR=/var/TestPatchWerk/patches
-    TMPDIR=/var/PatchWerkTest/temp
+    INSTNAME=TestPatchWerk
     BRANCH=development
     CONFIG=testconfig.cfg
 fi
+
+BINDIR=/usr/local/sbin/$INSTNAME
+LOGDIR=/var/log/$INSTNAME
+WORKDIR=/var/$INSTNAME
+PATCHDIR=$WORKDIR/patches
+TMPDIR=$WORKDIR/temp
 
 #checkout the correct branches
 cd PatchWerk-Radio
@@ -43,9 +43,6 @@ cp -r PatchWerk-Radio/Radio.py   $BINDIR/
 cp -r PatchWerk-Radio/master     $BINDIR/
 cp -r PatchWerk-Radio/Pd         $BINDIR/
 cp -r PatchWerk-Radio/config.cfg $BINDIR/
-#give files the correct permissions
-chmod 754 $BINDIR/Radio.py
-chown -R patchwerk:radio $BINDIR
 
 #if the config file exists in the same directory
 #copy it to the bindir
@@ -56,18 +53,20 @@ then
     cp  ./$CONFIG $BINDIR/
 fi
 
+#give files the correct permissions
+chmod 754 $BINDIR/Radio.py
+chown -R patchwerk:radio $BINDIR
+
+
 # Clear out the patch directory, then copy the new patches back into it
-rm -r $PATCHDIR
+rm -r $WORKDIR
 mkdir -p $PATCHDIR
 cp -r ./Radio-Patches/* $PATCHDIR/
 rm -r $PATCHDIR/README
-#fix permissions
-chown -R patchwerk:radio $PATCHDIR
-chmod -R 755 $PATCHDIR
 
-#clear out the temp directory
-rm -r $TMPDIR
 mkdir -p $TMPDIR
-chown patchwerk:radio $TMPDIR
-chmod 775 $TMPDIR
+
+#fix permissions
+chown -R patchwerk:radio $WORKDIR
+chmod -R 755 $WORKDIR
 
