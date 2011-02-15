@@ -418,7 +418,6 @@ class PureData(Pd):
         meta                = {}
         meta['ARTIST']      = self.patches[self.active].author
         meta['TITLE']       = self.patches[self.active].title
-        meta['DESCRIPTION'] = self.patches[self.active].info
         
         #send stream META Data
         for tag, info in meta.iteritems():
