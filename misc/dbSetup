@@ -2,6 +2,7 @@
 
 import MySQLdb
 from time import sleep
+import sys
 
 host = 'localhost'
 user = 'root'
@@ -20,66 +21,65 @@ except MySQLdb.Error, e:
 print 'Connected'
 
 
-query1 = "CREATE DATABASE IF NOT EXISTS %s" % newdb
+queries = ["CREATE DATABASE IF NOT EXISTS %s" % newdb]
 
-query2 = """CREATE USER '%s'@'localhost' IDENTIFIED BY '%s'""" % (newuser, newpass)
+queries.append("""CREATE USER '%s'@'localhost' IDENTIFIED BY '%s'""" % (newuser, newpass))
 
-query3 = "GRANT ALL PRIVILEGES ON  %s . * TO  '%s'@'localhost' WITH GRANT OPTION" % (newdb, newuser)
+queries.append("GRANT ALL PRIVILEGES ON  %s . * TO  '%s'@'localhost' WITH GRANT OPTION" % (newdb, newuser))
 
-query4 = "USE %s" % newdb
+queries.append("USE %s" % newdb)
 
-query5 = """
-CREATE TABLE IF NOT EXISTS `control` (
-  `state` varchar(10) NOT NULL
+queries.append("""
+CREATE TABLE IF NOT EXISTS `radiocontrol` (
+  `control` varchar(20) NOT NULL,
+  `status` varchar(20) NOT NULL,
+  PRIMARY KEY (`control`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
-INSERT INTO `control` (`state`) VALUES
-('play');
-"""
+INSERT INTO `radiocontrol` (`control`, `status`) VALUES
+('loading', 'on');
+""")
 
-query6 = """
+queries.append("""
 CREATE TABLE IF NOT EXISTS `logs` (
   `timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `message` text NOT NULL,
   KEY `timestamp` (`timestamp`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
-"""
+""")
 
-query7 = """
+queries.append("""
+CREATE TABLE IF NOT EXISTS `patchplays` (
+  `patchname` varchar(50) NOT NULL,
+  `playnum` int(11) NOT NULL,
+  PRIMARY KEY (`patchname`)
+) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+""")
+
+queries.append("""
 CREATE TABLE IF NOT EXISTS `patchinfo` (
-  `name` varchar(40) NOT NULL,
-  `playNum` int(11) NOT NULL
+  `patchname` varchar(50) NOT NULL,
+  `author` varchar(50) NOT NULL,
+  PRIMARY KEY (`patchname`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
-"""
+""")
 
-query8 = """
-CREATE TABLE IF NOT EXISTS `playing` (
-  `current` varchar(40) NOT NULL,
-  `previous` varchar(40) NOT NULL
+queries.append("""
+CREATE TABLE IF NOT EXISTS `radioinfo` (
+  `info` varchar(20) NOT NULL,
+  `value` varchar(50) NOT NULL,
+  PRIMARY KEY (`info`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
-INSERT INTO `playing` (`current`, `previous`) VALUES
-('none', 'none');
-"""
+INSERT INTO `radioinfo` (`info`, `value`) VALUES
+('status', 'down'),
+('current', 'none'),
+('previous', 'none');
+""")
 
-cursor = db.cursor()
+for query in queries:
+    cursor = db.cursor()
+    cursor.execute(query)
+    cursor.close()
 
-cursor.execute(query1)
-cursor.execute(query2)
-cursor.execute(query3)
-cursor.execute(query4)
-cursor.execute(query5)
-cursor.close()
-
-cursor = db.cursor()
-cursor.execute(query6)
-cursor.close()
-
-cursor = db.cursor()
-cursor.execute(query7)
-cursor.close()
-
-cursor = db.cursor()
-cursor.execute(query8)
-cursor.close()
 
