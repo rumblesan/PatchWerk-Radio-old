@@ -487,8 +487,11 @@ class PureData(Pd):
             except OSError, e:
                 print "Error %d: %s" %(e.args[0], e.args[1])
 
-        #TODO: this needs to check for the old temp patch as well
-        #      and delete it if it exists
+        name  = self.patches[self.old].name
+        tempFolder = os.path.join(self.tempDir, name)
+        if os.path.isdir(tempFolder):
+            shutil.rmtree(tempFolder)
+        
         name  = self.patches[self.active].name
         tempFolder = os.path.join(self.tempDir, name)
         shutil.rmtree(tempFolder)
