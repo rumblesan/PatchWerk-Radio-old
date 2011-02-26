@@ -567,7 +567,7 @@ def main(args):
             puredata.activate_patch()
             
             #update stream META data
-            puredata.update_meta()
+            #puredata.update_meta()
             
             #fade over to new patch
             puredata.crossfade()
