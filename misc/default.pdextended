@@ -7,6 +7,7 @@ loadlib2: maxlib
 loadlib3: pdogg
 loadlib4: cyclone
 loadlib5: ext13
-nloadlib: 5
+loadlib6: iemlib
+nloadlib: 6
 path1: /var/lib/defoma/x-ttcidfont-conf.d/dirs/TrueType
 npath: 1
