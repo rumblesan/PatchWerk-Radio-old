@@ -143,7 +143,7 @@ class SubPatch():
             config.read(infoFile)
             self.title  = config.get('info', 'title')
             self.author = config.get('info', 'author')
-            self.info   = config.get('info', 'info')
+            self.info   = config.get('info', 'link')
     
 
 class PureData(Pd):
@@ -412,17 +412,6 @@ class PureData(Pd):
         #pause while the fade occours
         self.pause(self.fadeTime)
     
-    def update_meta(self):
-        #update stream meta data with patch info
-        self.log.write("Updating stream META data")
-        meta                = {}
-        meta['ARTIST']      = self.patches[self.active].author
-        meta['TITLE']       = self.patches[self.active].title
-        
-        #send stream META Data
-        for tag, info in meta.iteritems():
-            self.Send(["stream", "meta", tag, info])
-    
     def kill_old_patch(self):
         #disconnect old patch from master patch and then del the object
         name  = self.patches[self.old].name
@@ -565,9 +554,6 @@ def main(args):
         else:
             #turn the DSP in the new patch on
             puredata.activate_patch()
-            
-            #update stream META data
-            #puredata.update_meta()
             
             #fade over to new patch
             puredata.crossfade()
