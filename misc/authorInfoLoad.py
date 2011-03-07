@@ -61,9 +61,7 @@ host = ''
 user = ''
 passwd = ''
 
-newuser = ''
-newpass = ''
-newdb = ''
+database = ''
 
 try:
     db = MySQLdb.connect(host, user, passwd)
@@ -73,7 +71,7 @@ except MySQLdb.Error, e:
 
 print 'Connected'
 
-query = "USE %s" % newdb
+query = "USE %s" % database
 cursor = db.cursor()
 cursor.execute(query)
 cursor.close()
