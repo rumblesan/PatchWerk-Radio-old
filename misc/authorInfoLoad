@@ -8,7 +8,6 @@ import os
 
 
 
-
 def update_author_info(db, author, link):
 
     cursor = db.cursor()
@@ -19,16 +18,7 @@ def update_author_info(db, author, link):
     cursor.execute(query)
     row = cursor.fetchone()
     cursor.close()
-    if row != None:
-        query = """UPDATE authorinfo
-                   SET author = "%s",
-                       link   = "%s"
-                   WHERE author = "%s"
-                """ % (author, link, author)
-        cursor = db.cursor()
-        cursor.execute(query)
-        cursor.close()
-    else:
+    if row == None:
         query = """INSERT INTO authorinfo
                    (author, link)
                    VALUES ("%s", "%s")
@@ -100,7 +90,7 @@ for dir in dirList:
         
         author    = patchInfo.get('info', 'author')
         patchname = patchInfo.get('info', 'title')
-        link      = patchInfo.get('info', 'info')
+        link      = patchInfo.get('info', 'link')
         
         print (author, patchname, link)
         del(patchInfo)
