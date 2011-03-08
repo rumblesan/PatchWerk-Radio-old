@@ -187,6 +187,16 @@ class PureData(Pd):
         self.patchDir    = self.config.get('paths', 'patchDir')
         self.masterDir   = self.config.get('paths', 'masterDir')
         self.tempDir     = self.config.get('paths', 'tempDir')
+        
+        #clears out the temp folder when starting up to remove anything from previous runs
+        for tempFolder in os.listdir(self.tempDir):
+            tempFolderPath = os.path.join(self.tempDir, tempFolder)
+            try:
+                if os.path.isfile(tempFolderPath):
+                    os.remove(tempFolderPath)
+            except Exception, e:
+                print e
+                
         path             = [self.masterDir]
         
         Pd.__init__(self, comPort, gui, self.patch, extra=extras, path=path)
