@@ -10,11 +10,21 @@ import tarfile
 
 
 
-host = 'localhost'
-user = 'patchwerk'
-passwd = 'radio!stats'
-database = 'patchwerk'
+host = ''
+user = ''
+passwd = ''
+database = ''
 
+try:
+    db = MySQLdb.connect(host, user, passwd)
+except MySQLdb.Error, e:
+    print "Error %d: %s" %(e.args[0], e.args[1])
+    sys.exit(1)
+
+query = "USE %s" % database
+cursor = db.cursor()
+cursor.execute(query)
+cursor.close()
 
 patchesFolder  = sys.argv[1]
 downloadFolder = sys.argv[2]
@@ -54,7 +64,13 @@ for dirName in dirList:
         shutil.rmtree(tempdir)
         os.remove(os.path.join(os.getcwd(), tarName))
 
-
+        query = """UPDATE patchinfo
+                   SET dlfile = "%s"
+                   WHERE patchname = "%s"
+                """ % (tarName, patchname)
+        cursor = db.cursor()
+        cursor.execute(query)
+        cursor.close()
 
 
 
