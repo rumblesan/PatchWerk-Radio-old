@@ -62,9 +62,9 @@ queries.append("""
 CREATE TABLE IF NOT EXISTS `patches` (
   `pid` int(11) NOT NULL AUTO_INCREMENT,
   `patchname` varchar(50) NOT NULL,
-  `plays` bigint(20) NOT NULL,
+  `plays` bigint(20) NOT NULL DEFAULT '0',
   `aid` int(11) NOT NULL,
-  `dlfile` varchar(100) NOT NULL,
+  `dlfile` varchar(100) NOT NULL DEFAULT '',
   PRIMARY KEY (`pid`),
   UNIQUE KEY `patchname` (`patchname`),
   KEY `authors` (`aid`)
