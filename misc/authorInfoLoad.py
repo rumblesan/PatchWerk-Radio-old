@@ -7,28 +7,39 @@ import sys
 import os
 
 
+host = ''
+user = ''
+passwd = ''
+
+database = ''
+
 
 def update_author_info(db, author, link):
 
     cursor = db.cursor()
-    query = """SELECT *
-               FROM authorinfo
-               WHERE author = "%s"
+    authquery = """SELECT *
+                   FROM authors
+                   WHERE author = "%s"
             """ % author
-    cursor.execute(query)
+    cursor.execute(authquery)
     row = cursor.fetchone()
     cursor.close()
     if row == None:
-        query = """INSERT INTO authorinfo
+        query = """INSERT INTO authors
                    (author, link)
                    VALUES ("%s", "%s")
                 """ % (author, link)
         cursor = db.cursor()
         cursor.execute(query)
         cursor.close()
+        cursor = db.cursor()
+        cursor.execute(authquery)
+        row = cursor.fetchone()
+        cursor.close()
+    aid = row[0]
+    return aid
 
-
-def update_patch_info(db, patchname, author):
+def update_patch_info(db, patchname, authorid):
 
     cursor = db.cursor()
     query = """SELECT *
@@ -41,27 +52,21 @@ def update_patch_info(db, patchname, author):
     if row != None:
         query = """UPDATE patchinfo
                    SET patchname = "%s",
-                       author    = "%s"
+                       author    = %i
                    WHERE patchname = "%s"
-                """ % (patchname, author, patchname)
+                """ % (patchname, authorid, patchname)
         cursor = db.cursor()
         cursor.execute(query)
         cursor.close()
     else:
         query = """INSERT INTO patchinfo
                    (patchname, author)
-                   VALUES ("%s", "%s")
-                """ % (patchname, author)
+                   VALUES ("%s", %i)
+                """ % (patchname, authorid)
         cursor = db.cursor()
         cursor.execute(query)
         cursor.close()
 
-
-host = ''
-user = ''
-passwd = ''
-
-database = ''
 
 try:
     db = MySQLdb.connect(host, user, passwd)
@@ -93,8 +98,8 @@ for dir in dirList:
         print (author, patchname, link)
         del(patchInfo)
 
-        update_patch_info(db, patchname, author)
-        update_author_info(db, author, link)
+        authorid = update_author_info(db, author, link)
+        update_patch_info(db, patchname, authorid)
 
 
 
