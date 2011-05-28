@@ -4,13 +4,20 @@ import MySQLdb
 from time import sleep
 import sys
 
+dbenv = sys.argv[1]
+
 host = 'localhost'
 user = 'root'
 passwd = ''
 
-newuser = ''
-newpass = ''
-newdb = ''
+if dbenv = "master":
+    newuser = 'patchwerk'
+    newpass = ''
+    newdb = 'radio'
+else:
+    newuser = 'testpatchwerk'
+    newpass = ''
+    newdb = 'testradio'
 
 try:
     db = MySQLdb.connect(host, user, passwd)
@@ -30,13 +37,16 @@ queries.append("GRANT ALL PRIVILEGES ON  %s . * TO  '%s'@'localhost' WITH GRANT 
 queries.append("USE %s" % newdb)
 
 queries.append("""
-CREATE TABLE IF NOT EXISTS `radiocontrol` (
-  `control` varchar(20) NOT NULL,
-  `status` varchar(20) NOT NULL,
-  PRIMARY KEY (`control`)
+CREATE TABLE IF NOT EXISTS `radio` (
+  `info` varchar(20) NOT NULL,
+  `value` varchar(50) NOT NULL,
+  PRIMARY KEY (`info`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
-INSERT INTO `radiocontrol` (`control`, `status`) VALUES
+INSERT INTO `radioinfo` (`info`, `value`) VALUES
+('status', ''),
+('current', ''),
+('previous', ''),
 ('loading', 'on');
 """)
 
@@ -49,32 +59,35 @@ CREATE TABLE IF NOT EXISTS `logs` (
 """)
 
 queries.append("""
-CREATE TABLE IF NOT EXISTS `patchplays` (
+CREATE TABLE IF NOT EXISTS `patches` (
+  `pid` int(11) NOT NULL AUTO_INCREMENT,
   `patchname` varchar(50) NOT NULL,
-  `playnum` int(11) NOT NULL,
-  PRIMARY KEY (`patchname`)
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+  `plays` bigint(20) NOT NULL,
+  `aid` int(11) NOT NULL AUTO_INCREMENT,
+  `dlfile` varchar(100) NOT NULL,
+  PRIMARY KEY (`pid`),
+  UNIQUE KEY `patchname` (`patchname`),
+  KEY `author` (`author`)
+) ENGINE=MyISAM  DEFAULT CHARSET=latin1 AUTO_INCREMENT=33 ;
 """)
 
 queries.append("""
-CREATE TABLE IF NOT EXISTS `patchinfo` (
-  `patchname` varchar(50) NOT NULL,
+CREATE TABLE IF NOT EXISTS `authors` (
+  `aid` int(11) NOT NULL AUTO_INCREMENT,
   `author` varchar(50) NOT NULL,
-  PRIMARY KEY (`patchname`)
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+  `link` varchar(100) NOT NULL,
+  PRIMARY KEY (`aid`)
+) ENGINE=MyISAM  DEFAULT CHARSET=latin1 AUTO_INCREMENT=9 ;
 """)
 
 queries.append("""
-CREATE TABLE IF NOT EXISTS `radioinfo` (
-  `info` varchar(20) NOT NULL,
-  `value` varchar(50) NOT NULL,
-  PRIMARY KEY (`info`)
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
-
-INSERT INTO `radioinfo` (`info`, `value`) VALUES
-('status', 'down'),
-('current', 'none'),
-('previous', 'none');
+CREATE TABLE IF NOT EXISTS `users` (
+  `uid` int(11) NOT NULL AUTO_INCREMENT,
+  `username` varchar(20) NOT NULL,
+  `password` char(32) NOT NULL,
+  PRIMARY KEY (`uid`),
+  UNIQUE KEY `username` (`username`)
+) ENGINE=MyISAM  DEFAULT CHARSET=latin1 AUTO_INCREMENT=2 ;
 """)
 
 for query in queries:
