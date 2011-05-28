@@ -7,17 +7,17 @@ import sys
 dbenv = sys.argv[1]
 
 host = 'localhost'
-user = 'root'
+user = ''
 passwd = ''
 
-if dbenv = "master":
-    newuser = 'patchwerk'
+if dbenv == "master":
+    newuser = ''
     newpass = ''
-    newdb = 'radio'
+    newdb = ''
 else:
-    newuser = 'testpatchwerk'
+    newuser = ''
     newpass = ''
-    newdb = 'testradio'
+    newdb = ''
 
 try:
     db = MySQLdb.connect(host, user, passwd)
@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS `radio` (
   PRIMARY KEY (`info`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
-INSERT INTO `radioinfo` (`info`, `value`) VALUES
+INSERT INTO `radio` (`info`, `value`) VALUES
 ('status', ''),
 ('current', ''),
 ('previous', ''),
@@ -63,11 +63,11 @@ CREATE TABLE IF NOT EXISTS `patches` (
   `pid` int(11) NOT NULL AUTO_INCREMENT,
   `patchname` varchar(50) NOT NULL,
   `plays` bigint(20) NOT NULL,
-  `aid` int(11) NOT NULL AUTO_INCREMENT,
+  `aid` int(11) NOT NULL,
   `dlfile` varchar(100) NOT NULL,
   PRIMARY KEY (`pid`),
   UNIQUE KEY `patchname` (`patchname`),
-  KEY `author` (`author`)
+  KEY `authors` (`aid`)
 ) ENGINE=MyISAM  DEFAULT CHARSET=latin1 AUTO_INCREMENT=33 ;
 """)
 
@@ -91,6 +91,7 @@ CREATE TABLE IF NOT EXISTS `users` (
 """)
 
 for query in queries:
+    print query
     cursor = db.cursor()
     cursor.execute(query)
     cursor.close()
