@@ -9,7 +9,6 @@ import shutil
 import tarfile
 
 
-
 host = ''
 user = ''
 passwd = ''
@@ -28,7 +27,7 @@ cursor.close()
 
 patchesFolder  = sys.argv[1]
 downloadFolder = sys.argv[2]
-patchComsFile  = sys.argv[3]
+patchComsFile  = patchesFolder + "/misc/patchComs.pd"
 
 dirList     = os.listdir(patchesFolder)
 
