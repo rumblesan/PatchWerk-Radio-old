@@ -51,11 +51,23 @@ class Model():
         if key in self.data:
             self.data[key] = value
     
-    def exists(self):
-        if self.data[self.key] != '':
-            return false
+    def exists(self, checkdb=False):
+        keyval = self.data[self.key]
+        if self.data[self.key] < 1:
+            return False
+        elif not checkdb:
+            return True
         else:
-            return true
+            sql = """SELECT 1
+                     FROM `%s`
+                     WHERE `%s` = "%s"
+                  """ % (self.table, self.key, keyval)
+            self.cursor.execute(sql)
+            row = self.cursor.fetchone()
+            if row != None:
+                return True
+            else:
+                return False
     
     def dump_info(self):
         for col, value in self.data.iteritems():
@@ -72,24 +84,34 @@ class Model():
             for col, value in row.iteritems():
                 self.data[col] = value
     
-    def retreive_one(self, key, value)
-        sql = """SELECT *
-                 FROM `%s`
-                 WHERE `%s` = "%s"
-              """ % (self.table, key, value)
-        self.cursor.execute(sql)
-        row = self.cursor.fetchone()
-        if row != None:
-            for col, value in row.iteritems():
-                self.data[col] = value
+    def retreive_one(self, key, value):
+        if key in self.data:
+            sql = """SELECT *
+                     FROM `%s`
+                     WHERE `%s` = "%s"
+                  """ % (self.table, key, value)
+            self.cursor.execute(sql)
+            row = self.cursor.fetchone()
+            if row != None:
+                for col, value in row.iteritems():
+                    self.data[col] = value
     
     def update(self):
         colvals = []
         keyval = self.data[self.key]
         for col, value in self.data.iteritems():
-            colvals.append(""" `%s`. = '%s' """ % (col, value))
+            colvals.append(""" `%s` = '%s' """ % (col, value))
         args = ", ".join(colvals)
-        sql = """UPDATE `%s` SET %s WHERE `%s` = %i""" % (self.table, args, self.key, keyval)
+        sql = """UPDATE `%s`
+                 SET %s
+                 WHERE `%s` = %i
+              """ % (self.table, args, self.key, keyval)
+        self.cursor.execute(sql)
+
+    def delete(self):
+        keyval = self.data[self.key]
+        sql = """DELETE FROM `%s`
+                 WHERE `%s` = %i""" % (self.table, self.key, keyval)
         self.cursor.execute(sql)
     
     def create(self):
@@ -98,49 +120,53 @@ class Model():
         keyval = self.data[self.key]
         for col, value in self.data.iteritems():
             cols.append("""`%s`""" % col)
-            vals.append("""`%s`""" % value)
+            vals.append("""'%s'""" % value)
         colargs = ", ".join(cols)
         valargs = ", ".join(vals)
-        sql = """INSERT INTO `%s` (%s) VALUES (`%s`)""" % (self.table, colargs, valargs)
+        sql = """INSERT INTO `%s`
+                 (%s)
+                 VALUES (%s)
+              """ % (self.table, colargs, valargs)
         self.cursor.execute(sql)
+        self.retreive(self.cursor.lastrowid)
     
 
 class Patch(Model):
 
-    def __init__(self, dbI, pid=''):
+    def __init__(self, dbI, pid=0):
         Model.__init__(self, "pid", "patches", dbI)
-        self.data['pid']       = ''
+        self.data['pid']       = 0
         self.data['patchname'] = ''
-        self.data['plays']     = ''
-        self.data['aid']       = ''
+        self.data['plays']     = 0
+        self.data['aid']       = 0
         self.data['dlfile']    = ''
-        if (pid != ''):
+        if (pid > 0):
             self.retreive(pid)
     
     def get_author(self):
-        if self.data['aid'] != '':
-            author = self.dbI.get_author(self.data['pid'])
+        if self.data['aid'] > 0:
+            author = self.dbI.get_author(self.data['aid'])
             return author
     
 
 class Author(Model):
 
-    def __init__(self, cursor, pid=''):
+    def __init__(self, dbI, aid=0):
         Model.__init__(self, "aid", "authors", dbI)
-        self.data['aid']    = ''
-        self.data['author'] = ''
+        self.data['aid']    = 0
+        self.data['name'] = ''
         self.data['link']   = ''
-        if (aid != ''):
+        if (aid > 0):
             self.retreive(aid)
     
     def get_patches(self):
-        if self.data['aid'] != '':
-            author = self.dbI.get_author(self.data['pid'])
-            return author
+        if self.data['aid'] > 0:
+            # add functionality here
+            # will return list of Patch objects
+            pass
     
 
 class Logger():
-    #class to handle logging. prepends timestamp to data then prints it out
     
     def __init__(self, dbI, echo=False):
         self.dbI    = dbI
@@ -168,14 +194,14 @@ class Logger():
 
 class RadioInfo(Model):
 
-    def __init__(self, cursor, id=''):
+    def __init__(self, cursor, id=0):
         Model.__init__(self, "id", "radio", dbI)
-        self.data['id']       = ''
+        self.data['id']       = 0
         self.data['status']   = ''
         self.data['loading']  = ''
         self.data['current']  = ''
         self.data['previous'] = ''
-        if (id != ''):
+        if (id > 0):
             self.retreive(id)
     
 
@@ -186,7 +212,7 @@ if __name__ == "__main__":
     dbname = ''
     host   = ''
     
-    db = DBInterface(user, passwd, dbname, host)
+    db = DbInterface(user, passwd, dbname, host)
     print "\n"
     
     patch1 = db.get_patch(3)
@@ -194,12 +220,12 @@ if __name__ == "__main__":
     print "\n"
     
     patch2 = db.get_patch()
-    patch2.retreive_one("Twins")
+    patch2.retreive_one("patchname", "Twins")
     patch2.dump_info()
     print "\n"
     
     patch3 = db.get_patch()
-    patch3.retreive_one("Kalith")
+    patch3.retreive_one("patchname", "Kalith")
     patch3.dump_info()
     author1 = patch3.get_author()
     author1.dump_info()
@@ -210,7 +236,42 @@ if __name__ == "__main__":
     print "\n"
     
     author3 = db.get_author()
-    author3.retreive_one("Az")
+    author3.retreive_one("name", "Az")
     author3.dump_info()
     print "\n"
     
+    author4 = db.get_author()
+    author4.set("name", "test1")
+    author4.set("link", "blah blah blah")
+    print "does author4 exist " + str(author4.exists())
+    author4.create()
+    print "does author4 exist " + str(author4.exists())
+    author4.dump_info()
+    print "\n"
+
+    patch4 = db.get_patch()
+    authid = author4.get("aid")
+    print authid
+    patch4.set("patchname", "testwerg")
+    patch4.set("dlfile", "testwerg")
+    patch4.set("aid", authid)
+    print "does patch4 exist " + str(patch4.exists())
+    patch4.create()
+    print "does patch4 exist " + str(patch4.exists())
+    patch4.dump_info()
+    patch4.delete()
+    print "does patch4 exist in db " + str(patch4.exists(True))
+    author4.delete()
+    print "does author4 exist in db " + str(author4.exists(True))
+    print "\n"
+
+    patch5 = db.get_patch(10)
+    patch5.dump_info()
+    plays = patch5.get("plays")
+    patch5.set("plays", plays + 1)
+    patch5.update()
+    patch5.dump_info()
+
+
+
+
