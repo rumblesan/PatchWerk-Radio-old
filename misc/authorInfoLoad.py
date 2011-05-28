@@ -43,24 +43,24 @@ def update_patch_info(db, patchname, authorid):
 
     cursor = db.cursor()
     query = """SELECT *
-               FROM patchinfo
+               FROM patches
                WHERE patchname = "%s"
             """ % patchname
     cursor.execute(query)
     row = cursor.fetchone()
     cursor.close()
     if row != None:
-        query = """UPDATE patchinfo
+        query = """UPDATE patches
                    SET patchname = "%s",
-                       author    = %i
+                       aid    = %i
                    WHERE patchname = "%s"
                 """ % (patchname, authorid, patchname)
         cursor = db.cursor()
         cursor.execute(query)
         cursor.close()
     else:
-        query = """INSERT INTO patchinfo
-                   (patchname, author)
+        query = """INSERT INTO patches
+                   (patchname, aid)
                    VALUES ("%s", %i)
                 """ % (patchname, authorid)
         cursor = db.cursor()
