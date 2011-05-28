@@ -9,10 +9,10 @@ import shutil
 import tarfile
 
 
-host = ''
-user = ''
-passwd = ''
-database = ''
+host = 'localhost'
+user = 'root'
+passwd = 'patchwerkdb'
+database = 'testradio'
 
 try:
     db = MySQLdb.connect(host, user, passwd)
@@ -27,7 +27,7 @@ cursor.close()
 
 patchesFolder  = sys.argv[1]
 downloadFolder = sys.argv[2]
-patchComsFile  = patchesFolder + "/misc/patchComs.pd"
+patchComsFile  = os.path.join(patchesFolder, "misc", "patchComs.pd")
 
 dirList     = os.listdir(patchesFolder)
 
@@ -63,7 +63,7 @@ for dirName in dirList:
         shutil.rmtree(tempdir)
         os.remove(os.path.join(os.getcwd(), tarName))
 
-        query = """UPDATE patchinfo
+        query = """UPDATE patches
                    SET dlfile = "%s"
                    WHERE patchname = "%s"
                 """ % (tarName, patchname)
