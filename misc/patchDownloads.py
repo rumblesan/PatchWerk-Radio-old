@@ -10,8 +10,8 @@ import tarfile
 
 
 host = 'localhost'
-user = 'root'
-passwd = 'patchwerkdb'
+user = ''
+passwd = ''
 database = 'testradio'
 
 try:
