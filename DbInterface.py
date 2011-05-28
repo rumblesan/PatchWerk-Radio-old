@@ -7,7 +7,7 @@ import sys
 
 class DbInterface():
 
-    def __init__(self, user, passwd, db, host="localhost"):
+    def __init__(self, user, passwd, db, host):
         try:
             self.db = MySQLdb.connect(host=host,
                                       user=user,
@@ -135,11 +135,11 @@ class Patch(Model):
 
     def __init__(self, dbI, pid=0):
         Model.__init__(self, "pid", "patches", dbI)
-        self.data['pid']       = 0
-        self.data['patchname'] = ''
-        self.data['plays']     = 0
-        self.data['aid']       = 0
-        self.data['dlfile']    = ''
+        self.data['pid']    = 0
+        self.data['name']   = ''
+        self.data['plays']  = 0
+        self.data['aid']    = 0
+        self.data['dlfile'] = ''
         if (pid > 0):
             self.retreive(pid)
     
@@ -164,6 +164,19 @@ class Author(Model):
             # add functionality here
             # will return list of Patch objects
             pass
+    
+
+class RadioInfo(Model):
+
+    def __init__(self, cursor, id=0):
+        Model.__init__(self, "id", "radio", dbI)
+        self.data['id']       = 0
+        self.data['status']   = ''
+        self.data['loading']  = ''
+        self.data['current']  = ''
+        self.data['previous'] = ''
+        if (id > 0):
+            self.retreive(id)
     
 
 class Logger():
@@ -192,19 +205,6 @@ class Logger():
         return strftime("%Y%m%d %H:%M:%S")
     
 
-class RadioInfo(Model):
-
-    def __init__(self, cursor, id=0):
-        Model.__init__(self, "id", "radio", dbI)
-        self.data['id']       = 0
-        self.data['status']   = ''
-        self.data['loading']  = ''
-        self.data['current']  = ''
-        self.data['previous'] = ''
-        if (id > 0):
-            self.retreive(id)
-    
-
 
 if __name__ == "__main__":
     user   = ''
@@ -220,12 +220,12 @@ if __name__ == "__main__":
     print "\n"
     
     patch2 = db.get_patch()
-    patch2.retreive_one("patchname", "Twins")
+    patch2.retreive_one("name", "Twins")
     patch2.dump_info()
     print "\n"
     
     patch3 = db.get_patch()
-    patch3.retreive_one("patchname", "Kalith")
+    patch3.retreive_one("name", "Kalith")
     patch3.dump_info()
     author1 = patch3.get_author()
     author1.dump_info()
@@ -252,7 +252,7 @@ if __name__ == "__main__":
     patch4 = db.get_patch()
     authid = author4.get("aid")
     print authid
-    patch4.set("patchname", "testwerg")
+    patch4.set("name", "testwerg")
     patch4.set("dlfile", "testwerg")
     patch4.set("aid", authid)
     print "does patch4 exist " + str(patch4.exists())
