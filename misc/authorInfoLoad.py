@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import MySQLdb
+from DbInterface import DbInterface
 import ConfigParser
 from time import sleep
 import sys
@@ -13,76 +13,10 @@ passwd = ''
 
 database = ''
 
-
-def update_author_info(db, author, link):
-
-    cursor = db.cursor()
-    authquery = """SELECT *
-                   FROM authors
-                   WHERE author = "%s"
-            """ % author
-    cursor.execute(authquery)
-    row = cursor.fetchone()
-    cursor.close()
-    if row == None:
-        query = """INSERT INTO authors
-                   (author, link)
-                   VALUES ("%s", "%s")
-                """ % (author, link)
-        cursor = db.cursor()
-        cursor.execute(query)
-        cursor.close()
-        cursor = db.cursor()
-        cursor.execute(authquery)
-        row = cursor.fetchone()
-        cursor.close()
-    aid = row[0]
-    return aid
-
-def update_patch_info(db, patchname, authorid):
-
-    cursor = db.cursor()
-    query = """SELECT *
-               FROM patches
-               WHERE patchname = "%s"
-            """ % patchname
-    cursor.execute(query)
-    row = cursor.fetchone()
-    cursor.close()
-    if row != None:
-        query = """UPDATE patches
-                   SET patchname = "%s",
-                       aid    = %i
-                   WHERE patchname = "%s"
-                """ % (patchname, authorid, patchname)
-        cursor = db.cursor()
-        cursor.execute(query)
-        cursor.close()
-    else:
-        query = """INSERT INTO patches
-                   (patchname, aid)
-                   VALUES ("%s", %i)
-                """ % (patchname, authorid)
-        cursor = db.cursor()
-        cursor.execute(query)
-        cursor.close()
-
-
-try:
-    db = MySQLdb.connect(host, user, passwd)
-except MySQLdb.Error, e:
-    print "Error %d: %s" %(e.args[0], e.args[1])
-    sys.exit(1)
-
-print 'Connected'
-
-query = "USE %s" % database
-cursor = db.cursor()
-cursor.execute(query)
-cursor.close()
-
 patchFolder = sys.argv[1]
 dirList     = os.listdir(patchFolder)
+
+dbi = DbInterface(user, passwd, database, host)
 
 for dir in dirList:
     infoFile = os.path.join(patchFolder, dir, "info")
@@ -91,17 +25,28 @@ for dir in dirList:
         patchInfo = ConfigParser.SafeConfigParser()
         patchInfo.read(infoFile)
         
-        author    = patchInfo.get('info', 'author')
-        patchname = patchInfo.get('info', 'title')
-        link      = patchInfo.get('info', 'link')
+        authorname = patchInfo.get('info', 'author')
+        patchname  = patchInfo.get('info', 'title')
+        weblink    = patchInfo.get('info', 'link')
         
-        print (author, patchname, link)
+        print (authorname, patchname, weblink)
         del(patchInfo)
 
-        authorid = update_author_info(db, author, link)
-        update_patch_info(db, patchname, authorid)
-
-
-
-
+        author = dbi.get_author()
+        author.retreive_one("name", authorname)
+        if not author.exists():
+            print ("Author %s doesn't exist, adding now" % authorname)
+            author.set("link", weblink)
+            author.create()
+        else:
+            print ("Author %s exists already, skipping" % authorname)
+        
+        patch = dbi.get_patch()
+        patch.retreive_one("name", patchname)
+        if not patch.exists():
+            print ("Patch %s doesn't exist, adding now" % patchname)
+            patch.set("aid", author.get("aid"))
+            patch.create()
+        else:
+            print ("Author %s exists already, skipping" % authorname)
 
