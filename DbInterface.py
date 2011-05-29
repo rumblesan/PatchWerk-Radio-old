@@ -18,6 +18,9 @@ class DbInterface():
             print "Error %d: %s" %(e.args[0], e.args[1])
             sys.exit(1)
     
+    def __del__(self):
+        self.db.close()
+    
     def get_patch(self, pid=''):
         patch = Patch(self, pid)
         return patch
@@ -43,6 +46,9 @@ class Model():
         self.table  = table
         self.dbI    = dbI
         self.cursor = self.dbI.db.cursor()
+    
+    def __del__(self):
+        self.cursor.close()
     
     def get(self, key):
         return self.data[key]
