@@ -36,6 +36,7 @@ for dir in dirList:
         author.retreive_one("name", authorname)
         if not author.exists():
             print ("Author %s doesn't exist, adding now" % authorname)
+            author.set("name", authorname)
             author.set("link", weblink)
             author.create()
         else:
@@ -45,8 +46,12 @@ for dir in dirList:
         patch.retreive_one("name", patchname)
         if not patch.exists():
             print ("Patch %s doesn't exist, adding now" % patchname)
+            patch.set("name", patchname)
             patch.set("aid", author.get("aid"))
             patch.create()
         else:
-            print ("Author %s exists already, skipping" % authorname)
+            print ("Patch %s exists already, skipping" % patchname)
+
+        del(author)
+        del(patch)
 
