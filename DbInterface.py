@@ -4,6 +4,7 @@
 import MySQLdb
 import MySQLdb.cursors
 import sys
+from time import strftime
 
 class DbInterface():
 
@@ -153,6 +154,12 @@ class Patch(Model):
         if self.data['aid'] > 0:
             author = self.dbI.get_author(self.data['aid'])
             return author
+            
+    def played(self):
+        playnum = self.get("plays")
+        playnum += 1
+        self.set("plays", playnum)
+        self.update
     
 
 class Author(Model):
@@ -174,16 +181,21 @@ class Author(Model):
 
 class RadioInfo(Model):
 
-    def __init__(self, cursor, id=0):
+    def __init__(self, dbI, id=0):
         Model.__init__(self, "id", "radio", dbI)
         self.data['id']       = 0
         self.data['status']   = ''
         self.data['loading']  = ''
-        self.data['current']  = ''
+        self.data['playing']  = ''
         self.data['previous'] = ''
         if (id > 0):
             self.retreive(id)
     
+    def new_patch(self, patchname):
+        playing = self.get("playing")
+        self.set("previous", playing)
+        self.set("playing", patchname)
+        self.update()
 
 class Logger():
     
