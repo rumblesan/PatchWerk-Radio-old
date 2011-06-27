@@ -14,10 +14,11 @@ import ConfigParser
 from Pd import Pd
 from time import time
 
+
 class PatchFactory:
     #class that will deal with getting
     #random patches and returning a SubPatchObject
-    
+
     def __init__(self, patchDir, tempDir, dbI, log):
         self.dbI = dbI
         self.patchDir = patchDir
@@ -97,15 +98,16 @@ class PatchFactory:
 
 class SubPatch(Patch):
     #Class for holding information about sub patches
-    
+
     def __init__(self, filename, folder, dbI):
         Patch.__init__(self, dbI)
         self.filename = filename
         self.folder   = folder
         self.ok       = False
         self.pnum     = -1
+        self.regnum   = -1
         self.read_info_file()
-        
+    
     def read_info_file(self):
         infoFile = os.path.join(self.folder, "info")
         if os.path.isfile(infoFile):
@@ -148,7 +150,7 @@ class Radio():
                 
         #create PD instance
         self.pd = PureData(configFile, self.log)
-        
+    
     def pause(self, length):
         self.pd.pause(length)
     
@@ -281,8 +283,6 @@ class Radio():
         sys.exit(0)
     
 
-
-
 class PureData(Pd):
     #Class that interfaces with PD process
     def __init__(self, configFile, logger):
@@ -301,6 +301,7 @@ class PureData(Pd):
         
         gui              = False
         self.regWait     = False
+        self.regNum      = 0
         self.regTimeout  = 20
         self.connection  = False
         
@@ -312,7 +313,6 @@ class PureData(Pd):
         
         Pd.__init__(self, comPort, gui, self.patch, extra=extras, path=path)
         self.log.write("Starting PD Process:%s" % self.argLine)
-        
     
     def PdStarted(self):
         self.log.write("PD has started")
@@ -335,13 +335,7 @@ class PureData(Pd):
         #Gets the unique number from the PD subPatch
         #This is sent to the Master Patch to change send and receieve
         #   objects so that the two can communicate
-        pdNum = data[0]
-        self.patches[self.active].pdNum = pdNum
-        self.patches[self.active].ok    = True
-        name  = self.patches[self.active].name
-        self.log.write("Registering number %s to %s" % (pdNum, name))
-        
-        self.Send(["register", self.active, pdNum])
+        self.regnum = data[0]
         
         #set regWait to False. Patch is registered
         self.regWait = False
@@ -356,7 +350,7 @@ class PureData(Pd):
     
     def dspstate(self, state):
         self.Send(['dsp', state])
-
+    
     def streaming_setup(self, config):
         password     = config.get('streaming', 'password')
         
@@ -417,6 +411,17 @@ class PureData(Pd):
             if errCount > self.regTimeout:
                 loadError = True
                 break
+        
+        if self.regnum == 0
+            loadError = True
+        
+        if !loadError:
+            patch.regnum = self.regnum
+            self.log.write("Registering number %s to %s" % (regNum, patch.get('name')))
+            
+            self.Send(["register", patch.pnum, self.regnum])
+            self.regnum = 0
+        
         return loadError
     
     def activate_patch(self, patch):
