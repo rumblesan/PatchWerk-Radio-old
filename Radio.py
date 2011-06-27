@@ -9,6 +9,7 @@ import random
 import signal
 from DbInterface import DbInterface
 from DbInterface import Patch
+from DbInterface import Logger
 import ConfigParser
 from Pd import Pd
 from time import time
@@ -80,7 +81,7 @@ class PatchFactory:
         #get a random patch from the patch folder
         patchFile, folder = self.get_random_patch()
         patchFolder   = os.path.join(self.patchDir, folder)
-        tempFolder    = os.path.join(self.tempDir, name)
+        tempFolder    = os.path.join(self.tempDir, patchFile)
         
         #copy the patch folder into a temporary folder
         #the patch will be opened from this location
@@ -89,7 +90,7 @@ class PatchFactory:
         #create patch object
         newPatch = SubPatch(patchFile, tempFolder, self.dbI)
         
-        self.log.write("New Patch is %s" % newPatch.get("patchname")
+        self.log.write("New Patch is %s" % newPatch.get('name'))
         
         return newPatch
     
@@ -97,12 +98,12 @@ class PatchFactory:
 class SubPatch(Patch):
     #Class for holding information about sub patches
     
-    def __init__(self, filename, folder, pnum, dbI):
+    def __init__(self, filename, folder, dbI):
         Patch.__init__(self, dbI)
         self.filename = filename
         self.folder   = folder
         self.ok       = False
-        self.pnum     = pnum
+        self.pnum     = -1
         self.read_info_file()
         
     def read_info_file(self):
@@ -112,18 +113,18 @@ class SubPatch(Patch):
             config.read(infoFile)
             title  = config.get('info', 'title')
             del(config)
-            self.retreive_one("patchname" title)
+            self.retreive_one('title', title)
     
 
 class Radio():
 
     def __init__(self, configFile, dbI):
     
-        config      = ConfigParser.SafeConfigParser()
-        config.read(configFile)
+        self.config      = ConfigParser.SafeConfigParser()
+        self.config.read(configFile)
         
-        self.patchDir     = config.get('paths', 'patchDir')
-        self.tempDir      = config.get('paths', 'tempDir')
+        self.patchDir     = self.config.get('paths', 'patchDir')
+        self.tempDir      = self.config.get('paths', 'tempDir')
         self.loadError    = False
         self.pnum         = 1
         self.patches      = []
@@ -171,13 +172,13 @@ class Radio():
     def all_ok(self):
         #everything is loaded fine. set status to up in db
         #and turn on PD DSP
-        self.db.current_state("up")
+        self.radioInfo.radio_status("up")
         self.pd.dspstate(1)
     
     def streaming_setup(self):
         #send a message to the streaming controls in the master patch
         self.log.write("Setting up streaming")
-        self.pd.streaming_setup(config)
+        self.pd.streaming_setup(self.config)
     
     def control_check(self):
         self.log.write("Checking control state")
@@ -256,7 +257,7 @@ class Radio():
         #                 exit python
         self.log.write("Received SIGTERM")
         self.log.write("Disconnecting Stream")
-        self.Send(["stream", "connect", 0])
+        self.pd.Send(["stream", "connect", 0])
         if self.Alive():
             self.log.write("Killing PureData Process")
             try:
@@ -309,8 +310,8 @@ class PureData(Pd):
                 
         path             = [self.masterDir]
         
-        self.log.write("Starting PD Process:%s" % self.argLine)
         Pd.__init__(self, comPort, gui, self.patch, extra=extras, path=path)
+        self.log.write("Starting PD Process:%s" % self.argLine)
         
     
     def PdStarted(self):
@@ -461,10 +462,10 @@ def main(args):
     
     config   = ConfigParser.SafeConfigParser()
     config.read(configFile)
-    dbUser   = self.config.get('database', 'user')
-    dbPasswd = self.config.get('database', 'password')
-    dbHost   = self.config.get('database', 'host')
-    dbName   = self.config.get('database', 'dbname')
+    dbUser   = config.get('database', 'user')
+    dbPasswd = config.get('database', 'password')
+    dbHost   = config.get('database', 'host')
+    dbName   = config.get('database', 'dbname')
     dbI      = DbInterface(dbUser, dbPasswd, dbName, dbHost)
     del(config)
     
