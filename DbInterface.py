@@ -197,6 +197,10 @@ class RadioInfo(Model):
         self.set("playing", patchname)
         self.update()
 
+    def radio_status(self, status):
+        self.set("status", status)
+        self.update()
+
 class Logger():
     
     def __init__(self, dbI, echo=False):
@@ -216,7 +220,7 @@ class Logger():
         query = """INSERT INTO %s
                    (message)
                    VALUES ("%s")
-                """ % (self.logtable, message)
+                """ % (self.table, message)
         self.cursor.execute(query)
     
     def timeStamp(self):
