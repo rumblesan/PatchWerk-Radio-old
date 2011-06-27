@@ -154,6 +154,9 @@ class Radio():
     def pause(self, length):
         self.pd.pause(length)
     
+    def play(self):
+        self.pd.play()
+    
     def check_pd(self):
         if self.pd.Alive:
             self.log.write('PD started fine')
@@ -208,7 +211,7 @@ class Radio():
         #notifies when there has been an error loading a patch
         patch = self.patches.pop()
         self.log.write("Error:***************************************")
-        self.log.write("Error:Problem loading %s from %s" % (patch.get("patchname"), patch.folder))
+        self.log.write("Error:Problem loading %s from %s" % (patch.get('name'), patch.folder))
         self.log.write("Error:Unloading patch and starting again")
         
         self.pd.stop_patch(patch)
@@ -222,29 +225,26 @@ class Radio():
     
     def activate_patch(self):
         #turn on DSP in new patch
-        patch = self.patches.index(0)
-        self.log.write("Turning on %s DSP" % patch.get("patchname"))
+        patch = self.patches[0]
+        self.log.write("Turning on %s DSP" % patch.get('name'))
         self.pd.activate_patch(patch)
         
         patch.played()
-        self.radio_info(patch.get("patchname"))
+        self.radioInfo.new_patch(patch.get('name'))
         self.pause(1)
     
     def crossfade(self):
         #fade across to new active patch
-        patch = self.patches.index(0)
-        self.log.write("Fading over to %s" % patch.get("patchname"))
+        patch = self.patches[0]
+        self.log.write("Fading over to %s" % patch.get('name'))
         self.pd.fade_in_patch(patch)
-        
-        #pause while the fade occours
-        self.pause(self.fadeTime)
     
     def kill_old_patch(self):
         #disconnect old patch from master patch and then del the object
         if len(self.patches) == self.maxpatches:
             patch  = self.patches.pop()
             
-            self.log.write("Stopping %s" % patch.get("patchname"))
+            self.log.write("Stopping %s" % patch.get('name'))
             self.pd.stop_patch(patch)
             
             #deleting temporary file
@@ -260,7 +260,7 @@ class Radio():
         self.log.write("Received SIGTERM")
         self.log.write("Disconnecting Stream")
         self.pd.Send(["stream", "connect", 0])
-        if self.Alive():
+        if self.pd.Alive():
             self.log.write("Killing PureData Process")
             try:
                 self.Exit()
@@ -347,6 +347,9 @@ class PureData(Pd):
         start = time()
         while time() - start < pauseLength:
             self.Update()
+
+    def play(self):
+        self.pause(self.playTime)
     
     def dspstate(self, state):
         self.Send(['dsp', state])
@@ -412,12 +415,12 @@ class PureData(Pd):
                 loadError = True
                 break
         
-        if self.regnum == 0
+        if self.regnum == 0:
             loadError = True
         
-        if !loadError:
+        if not loadError:
             patch.regnum = self.regnum
-            self.log.write("Registering number %s to %s" % (regNum, patch.get('name')))
+            self.log.write("Registering number %s to %s" % (self.regNum, patch.get('name')))
             
             self.Send(["register", patch.pnum, self.regnum])
             self.regnum = 0
@@ -432,6 +435,9 @@ class PureData(Pd):
         patchNum = patch.pnum
         self.Send(['volume', 'fade', self.fadeTime])
         self.Send(['volume', 'chan', patchNum])
+        
+        #pause while the fade occours
+        self.pause(self.fadeTime)
     
     def stop_patch(self, patch):
         self.Send(["coms", patch.pnum, 'dsp', 0])
@@ -516,7 +522,7 @@ def main(args):
             radio.kill_old_patch()
             
             #pause untill next patch needs to be loaded
-            radio.pause(radio.playTime)
+            radio.play()
 
 if __name__ == "__main__":
     main(sys.argv)
