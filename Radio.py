@@ -1,3 +1,4 @@
+
 #!/usr/bin/env python
 
 #Import Modules
@@ -19,20 +20,17 @@ class PatchFactory:
     #class that will deal with getting
     #random patches and returning a SubPatchObject
 
-    def __init__(self, patchDir, tempDir, dbI, log):
-        self.dbI = dbI
-        self.patchDir = patchDir
-        self.tempDir  = tempDir
+    def __init__(self, patchDir, tempDir, dbI, logger):
+        self.dbI       = dbI
+        self.patchDir  = patchDir
+        self.tempDir   = tempDir
         self.prevPatch = ''
-        self.log = log
+        self.log       = logger
         
         self.fileMatch   = re.compile("^main-.*?\.pd$")
     
     def get_random_patch(self):
         #get a random patch from the patch directory
-        
-        #get the name of the previously loaded patch
-        previousPatch = self.prevPatch
         
         #get a list of files from the patch directory
         dirList       = os.listdir(self.patchDir)
@@ -43,11 +41,10 @@ class PatchFactory:
         
         #keep looping untill a suitable next patch is found
         while not patchFound:
-            
             #keep going until a valid directory is found
             while not dirFound:
                 patchFolder = random.choice(dirList)
-                checkDir     = os.path.join(self.patchDir, patchFolder)
+                checkDir    = os.path.join(self.patchDir, patchFolder)
                 #TODO: want to put a check in here for the directory name
                 if os.path.isdir(checkDir):
                     dirFound = True
@@ -55,16 +52,14 @@ class PatchFactory:
                     self.log.write("Error:%s is not a valid folder" % checkDir)
             
             #suitable folder chosen, now check for main patch inside it
-            fileList = os.listdir(checkDir)
-            for file in fileList:
-                if self.fileMatch.search(file):
-                    patchFile = file
+            for patchFile in os.listdir(checkDir):
+                if self.fileMatch.search(patchFile):
                     mainFound = True
                     
             if not mainFound:
                 self.log.write("Error:%s has no main patch" % checkDir)
                 dirFound = False
-            elif patchFile == previousPatch:
+            elif patchFile == self.prevPatch:
                 self.log.write("Error:%s also the previous patch" % patchFile)
                 dirFound = False
             else:
@@ -75,21 +70,21 @@ class PatchFactory:
             if not patchFound:
                 self.log.write("Choosing again.")
         
+        self.prevPatch = patchFile
         return (patchFile, patchFolder)
     
     def new_patch(self):
-        
         #get a random patch from the patch folder
-        patchFile, folder = self.get_random_patch()
-        patchFolder   = os.path.join(self.patchDir, folder)
-        tempFolder    = os.path.join(self.tempDir, patchFile)
+        file, folder = self.get_random_patch()
+        patchFolder  = os.path.join(self.patchDir, folder)
+        tempFolder   = os.path.join(self.tempDir, file)
         
         #copy the patch folder into a temporary folder
         #the patch will be opened from this location
         shutil.copytree(patchFolder, tempFolder)
         
         #create patch object
-        newPatch = SubPatch(patchFile, tempFolder, self.dbI)
+        newPatch = SubPatch(file, tempFolder, self.dbI)
         
         self.log.write("New Patch is %s" % newPatch.get('name'))
         
@@ -103,9 +98,8 @@ class SubPatch(Patch):
         Patch.__init__(self, dbI)
         self.filename = filename
         self.folder   = folder
-        self.ok       = False
-        self.pnum     = -1
-        self.regnum   = -1
+        self.channel  = -1
+        self.pdnum    = -1
         self.read_info_file()
     
     def read_info_file(self):
@@ -128,9 +122,9 @@ class Radio():
         self.patchDir     = self.config.get('paths', 'patchDir')
         self.tempDir      = self.config.get('paths', 'tempDir')
         self.loadError    = False
-        self.pnum         = 1
+        self.channel      = 1
         self.patches      = []
-        self.maxpatches   = 2
+        self.maxchannels  = 2
         
         self.dbI          = dbI
         self.log          = Logger(self.dbI)
@@ -193,17 +187,17 @@ class Radio():
             self.pause(60)
     
     def new_patch(self):
-        newPatch      = self.PatchFactory.new_patch()
-        newPatch.pnum = self.pnum
+        newPatch         = self.PatchFactory.new_patch()
+        newPatch.channel = self.channel
         self.patches.insert(0, newPatch)
         if self.pd.load_patch(newPatch):
             #there's been a loading error
             self.loadError = True
         else:
             self.loadError = False
-            self.pnum += 1
-            if self.pnum > self.maxpatches:
-                self.pnum = 1
+            self.channel += 1
+            if self.channel > self.maxchannels:
+                self.channel = 1
             
         return self.loadError
     
@@ -235,7 +229,7 @@ class Radio():
     
     def kill_old_patch(self):
         #disconnect old patch from master patch and then del the object
-        if len(self.patches) == self.maxpatches:
+        if len(self.patches) == self.maxchannels:
             patch  = self.patches.pop()
             
             self.log.write("Stopping %s" % patch.get('name'))
@@ -295,7 +289,7 @@ class PureData(Pd):
         
         gui              = False
         self.regWait     = False
-        self.regNum      = 0
+        self.pdnum      = 0
         self.regTimeout  = 20
         self.connection  = False
         
@@ -329,7 +323,7 @@ class PureData(Pd):
         #Gets the unique number from the PD subPatch
         #This is sent to the Master Patch to change send and receieve
         #   objects so that the two can communicate
-        self.regnum = data[0]
+        self.pdnum = data[0]
         
         #set regWait to False. Patch is registered
         self.regWait = False
@@ -409,15 +403,15 @@ class PureData(Pd):
                 loadError = True
                 break
         
-        if self.regnum == 0:
+        if self.pdnum == 0:
             loadError = True
         
         if not loadError:
-            patch.regnum = self.regnum
-            self.log.write("Registering number %s to %s" % (self.regNum, patch.get('name')))
+            patch.pdnum = self.pdnum
+            self.log.write("Registering number %s to %s" % (self.pdnum, patch.get('name')))
             
-            self.Send(["register", patch.pnum, self.regnum])
-            self.regnum = 0
+            self.Send(["register", patch.pdnum, self.pdnum])
+            self.pdnum = 0
         
         return loadError
     
