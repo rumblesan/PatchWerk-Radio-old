@@ -78,6 +78,7 @@ class PatchFactory:
         patchFolder  = os.path.join(self.patchDir, folder)
         tempFolder   = os.path.join(self.tempDir, file)
         
+        print (file, folder, self.tempDir)
         #copy the patch folder into a temporary folder
         #the patch will be opened from this location
         shutil.copytree(patchFolder, tempFolder)
@@ -249,13 +250,13 @@ class Radio():
         
         self.pd.shut_down()
         
-        for patches in self.patches
+        for patch in self.patches:
             tempFolder = os.path.join(patch.folder, patch.filename)
             if os.path.isdir(tempFolder):
                 shutil.rmtree(tempFolder)
         
         #tell DB that program is down
-        self.db.current_state("down")
+        self.radioInfo.radio_status("down")
         self.log.write("Bye Bye")
         sys.exit(0)
     
@@ -405,20 +406,20 @@ class PureData(Pd):
         return loadError
     
     def activate_patch(self, patch):
-        patchNum = patch.pnum
-        self.Send(["coms",patchNum, 'dsp', 1])
+        channel = patch.channel
+        self.Send(["coms",channel, 'dsp', 1])
     
     def fade_in_patch(self, patch):
-        patchNum = patch.pnum
+        channel = patch.channel
         self.Send(['volume', 'fade', self.fadeTime])
-        self.Send(['volume', 'chan', patchNum])
+        self.Send(['volume', 'chan', channel])
         
         #pause while the fade occours
         self.pause(self.fadeTime)
     
     def stop_patch(self, patch):
-        self.Send(["coms", patch.pnum, 'dsp', 0])
-        self.Send(["register", patch.pnum, 0])
+        self.Send(["coms", patch.channel, 'dsp', 0])
+        self.Send(["register", patch.channel, 0])
         self.pause(1)
         self.Send(['close', patch.filename])
     
@@ -495,7 +496,7 @@ def main(args):
         
         if radio.loadError:
             #call function to deal with loading error
-            radio.load_error()
+            radio.loading_error()
             
         else:
             #turn the DSP in the new patch on
