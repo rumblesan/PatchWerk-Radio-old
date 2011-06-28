@@ -217,12 +217,6 @@ class Radio():
         self.pd.stop_patch(patch)
         shutil.rmtree(patch.folder)
     
-    def switch_patch(self):
-        #change the active patch number
-        self.old, self.active = self.active, self.old
-        name = "patch%i" % self.active
-        self.log.write("Changing active patch to be %s" % name)
-    
     def activate_patch(self):
         #turn on DSP in new patch
         patch = self.patches[0]
