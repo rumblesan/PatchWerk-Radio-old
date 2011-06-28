@@ -138,7 +138,7 @@ class Radio():
                 if os.path.isfile(tempFolderPath):
                     os.remove(tempFolderPath)
             except Exception, e:
-                print e
+                self.log.write("Error %d: %s" %(e.args[0], e.args[1]))
                 sys.exit(1)
                 
         #create PD instance
@@ -440,7 +440,7 @@ class PureData(Pd):
             try:
                 self.Exit()
             except OSError, e:
-                print "Error %d: %s" %(e.args[0], e.args[1])
+                self.log.write("Error %d: %s" %(e.args[0], e.args[1]))
     
 
 def main(args):
