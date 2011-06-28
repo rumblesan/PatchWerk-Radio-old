@@ -54,6 +54,7 @@ class PatchFactory:
             for patchFile in os.listdir(checkDir):
                 if self.fileMatch.search(patchFile):
                     mainFound = True
+                    break
                     
             if not mainFound:
                 self.log.write("Error:%s has no main patch" % checkDir)
@@ -76,9 +77,8 @@ class PatchFactory:
         #get a random patch from the patch folder
         file, folder = self.get_random_patch()
         patchFolder  = os.path.join(self.patchDir, folder)
-        tempFolder   = os.path.join(self.tempDir, file)
+        tempFolder   = os.path.join(self.tempDir, folder)
         
-        print (file, folder, self.tempDir)
         #copy the patch folder into a temporary folder
         #the patch will be opened from this location
         shutil.copytree(patchFolder, tempFolder)
@@ -109,7 +109,7 @@ class SubPatch(Patch):
             config.read(infoFile)
             title  = config.get('info', 'title')
             del(config)
-            self.retreive_one('title', title)
+            self.retreive_one('name', title)
     
 
 class Radio():
@@ -127,7 +127,7 @@ class Radio():
         self.maxchannels  = 2
         
         self.dbI          = dbI
-        self.log          = Logger(self.dbI)
+        self.log          = Logger(self.dbI, True)
         self.PatchFactory = PatchFactory(self.patchDir, self.tempDir, self.dbI, self.log)
         
         self.radioInfo   = self.dbI.get_radio_info()
@@ -224,6 +224,7 @@ class Radio():
     def crossfade(self):
         #fade across to new active patch
         patch = self.patches[0]
+        pname = patch.data['name']
         self.log.write("Fading over to %s" % patch.get('name'))
         self.pd.fade_in_patch(patch)
     
@@ -251,7 +252,7 @@ class Radio():
         self.pd.shut_down()
         
         for patch in self.patches:
-            tempFolder = os.path.join(patch.folder, patch.filename)
+            tempFolder = patch.folder
             if os.path.isdir(tempFolder):
                 shutil.rmtree(tempFolder)
         
@@ -307,6 +308,7 @@ class PureData(Pd):
         if type == "status":
             if val == "1":
                 self.log.write('Network connection to PD is up')
+                self.Send(['debug', 1])
                 self.connection = True
     
     def Pd_register(self, data):
@@ -375,9 +377,7 @@ class PureData(Pd):
         self.Send(["stream", "connect", 1])
     
     def load_patch(self, patch):
-        file   = patch.filename
-        folder = patch.folder
-        self.Send(['open', file, folder])
+        self.Send(['open', patch.filename, patch.folder])
         
         #change regWait to true. We will wait untill the patch is registered
         self.regWait = True
@@ -399,8 +399,7 @@ class PureData(Pd):
         if not loadError:
             patch.pdnum = self.pdnum
             self.log.write("Registering number %s to %s" % (self.pdnum, patch.get('name')))
-            
-            self.Send(["register", patch.pdnum, self.pdnum])
+            self.Send(['reg', patch.channel, self.pdnum])
             self.pdnum = 0
         
         return loadError
@@ -419,7 +418,7 @@ class PureData(Pd):
     
     def stop_patch(self, patch):
         self.Send(["coms", patch.channel, 'dsp', 0])
-        self.Send(["register", patch.channel, 0])
+        self.Send(['reg', patch.channel, 0])
         self.pause(1)
         self.Send(['close', patch.filename])
     
