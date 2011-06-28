@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python
 
 #Import Modules
@@ -247,26 +246,16 @@ class Radio():
         #                 exit python
         self.log.write("Received SIGTERM")
         self.log.write("Disconnecting Stream")
-        self.pd.Send(["stream", "connect", 0])
-        if self.pd.Alive():
-            self.log.write("Killing PureData Process")
-            try:
-                self.Exit()
-            except OSError, e:
-                print "Error %d: %s" %(e.args[0], e.args[1])
-
-        name  = self.patches[self.old].name
-        tempFolder = os.path.join(self.tempDir, name)
-        if os.path.isdir(tempFolder):
-            shutil.rmtree(tempFolder)
         
-        name  = self.patches[self.active].name
-        tempFolder = os.path.join(self.tempDir, name)
-        shutil.rmtree(tempFolder)
+        self.pd.shut_down()
+        
+        for patches in self.patches
+            tempFolder = os.path.join(patch.folder, patch.filename)
+            if os.path.isdir(tempFolder):
+                shutil.rmtree(tempFolder)
         
         #tell DB that program is down
         self.db.current_state("down")
-        
         self.log.write("Bye Bye")
         sys.exit(0)
     
@@ -443,6 +432,15 @@ class PureData(Pd):
             self.log.write("OggCast:%s" % str(error[1:]))
         else:
             self.log.write("PD:%s" % str(error))
+    
+    def shut_down(self):
+        self.Send(["stream", "connect", 0])
+        if self.Alive():
+            self.log.write("Killing PureData Process")
+            try:
+                self.Exit()
+            except OSError, e:
+                print "Error %d: %s" %(e.args[0], e.args[1])
     
 
 def main(args):
