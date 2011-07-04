@@ -13,6 +13,7 @@ from DbInterface import Logger
 import ConfigParser
 from Pd import Pd
 from time import time
+from optparse import OptionParser
 
 
 class PatchFactory:
@@ -114,10 +115,10 @@ class SubPatch(Patch):
 
 class Radio():
 
-    def __init__(self, configFile, dbI):
+    def __init__(self, options, dbI):
     
         self.config      = ConfigParser.SafeConfigParser()
-        self.config.read(configFile)
+        self.config.read(options.file)
         
         self.patchDir     = self.config.get('paths', 'patchDir')
         self.tempDir      = self.config.get('paths', 'tempDir')
@@ -127,7 +128,7 @@ class Radio():
         self.maxchannels  = 2
         
         self.dbI          = dbI
-        self.log          = Logger(self.dbI, True)
+        self.log          = Logger(self.dbI, options.verbose)
         self.PatchFactory = PatchFactory(self.patchDir, self.tempDir, self.dbI, self.log)
         
         self.radioInfo   = self.dbI.get_radio_info()
@@ -144,6 +145,9 @@ class Radio():
                 
         #create PD instance
         self.pd = PureData(configFile, self.log)
+        
+        if options.debug:
+            self.pd.debug(1)
     
     def pause(self, length):
         self.pd.pause(length)
@@ -308,7 +312,6 @@ class PureData(Pd):
         if type == "status":
             if val == "1":
                 self.log.write('Network connection to PD is up')
-                self.Send(['debug', 1])
                 self.connection = True
     
     def Pd_register(self, data):
@@ -333,6 +336,9 @@ class PureData(Pd):
     
     def dspstate(self, state):
         self.Send(['dsp', state])
+    
+    def debug(self, state):
+        self.Send(['debug', state])
     
     def streaming_setup(self, config):
         password     = config.get('streaming', 'password')
@@ -443,22 +449,24 @@ class PureData(Pd):
                 self.log.write("Error %d: %s" %(e.args[0], e.args[1]))
     
 
-def main(args):
+def main():
     
-    if len(args) != 3:
-        print "Too many Arguments. %i given" % len(args)
+    parser = OptionParser(usage='usage: %prog [-d] -c <configfile>')
+    parser.add_option('-c', action='store', dest='configfile', default='',
+                      help='Path to the config file', metavar='<configfile>')
+    parser.add_option('-d', action='store', dest='debug', default=False,
+                      help='Log all messages sent to PD')
+    parser.add_option('-v', action='store', dest='verbose' default=False,
+                      help='Print all log messages')
+    (options, args) = parser.parse_args()
+    
+    
+    if not os.path.isfile(options.file):
+        print "File %s does not exist" % options.file
         sys.exit(1)
-    elif args[1] != "-c":
-        print "Incorrect Arg. Exepected -c but got %s" % len(args)
-        sys.exit(1)
-    elif not os.path.isfile(args[2]):
-        print "File %s does not exist" % args[2]
-        sys.exit(1)
-    else:
-        configFile = args[2]
     
     config   = ConfigParser.SafeConfigParser()
-    config.read(configFile)
+    config.read(options.file)
     dbUser   = config.get('database', 'user')
     dbPasswd = config.get('database', 'password')
     dbHost   = config.get('database', 'host')
@@ -467,7 +475,7 @@ def main(args):
     del(config)
     
     #create mixing/streaming patch
-    radio = Radio(configFile, dbI)
+    radio = Radio(options, dbI)
     radio.pause(1)
     
     #register handler for SIGTERM
@@ -511,4 +519,4 @@ def main(args):
             radio.play()
 
 if __name__ == "__main__":
-    main(sys.argv)
+    main()
