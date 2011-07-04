@@ -118,7 +118,7 @@ class Radio():
     def __init__(self, options, dbI):
     
         self.config      = ConfigParser.SafeConfigParser()
-        self.config.read(options.file)
+        self.config.read(options.configfile)
         
         self.patchDir     = self.config.get('paths', 'patchDir')
         self.tempDir      = self.config.get('paths', 'tempDir')
@@ -144,7 +144,7 @@ class Radio():
                 sys.exit(1)
                 
         #create PD instance
-        self.pd = PureData(configFile, self.log)
+        self.pd = PureData(options.configfile, self.log)
         
         if options.debug:
             self.pd.debug(1)
@@ -452,21 +452,21 @@ class PureData(Pd):
 def main():
     
     parser = OptionParser(usage='usage: %prog [-d] -c <configfile>')
-    parser.add_option('-c', action='store', dest='configfile', default='',
-                      help='Path to the config file', metavar='<configfile>')
-    parser.add_option('-d', action='store', dest='debug', default=False,
-                      help='Log all messages sent to PD')
-    parser.add_option('-v', action='store', dest='verbose' default=False,
-                      help='Print all log messages')
+    parser.add_option('-c', action='store', dest='configfile',
+                      default='', help='Path to the config file', metavar='<configfile>')
+    parser.add_option('-d', action='store_true', dest='debug',
+                      default=False, help='Log all messages sent to PD')
+    parser.add_option('-v', action='store_true', dest='verbose',
+                      default=False, help='Print all log messages')
     (options, args) = parser.parse_args()
     
     
-    if not os.path.isfile(options.file):
-        print "File %s does not exist" % options.file
+    if not os.path.isfile(options.configfile):
+        print "File %s does not exist" % options.configfile
         sys.exit(1)
     
     config   = ConfigParser.SafeConfigParser()
-    config.read(options.file)
+    config.read(options.configfile)
     dbUser   = config.get('database', 'user')
     dbPasswd = config.get('database', 'password')
     dbHost   = config.get('database', 'host')
