@@ -39,22 +39,18 @@ cd ..
 # Clear out the binary dir and then copy the correct files into it
 rm -r $BINDIR
 mkdir -p $BINDIR
-cp -r PatchWerk-Radio/Radio.py   $BINDIR/
-cp -r PatchWerk-Radio/master     $BINDIR/
-cp -r PatchWerk-Radio/Pd         $BINDIR/
-cp -r PatchWerk-Radio/config.cfg $BINDIR/
+cp -r PatchWerk-Radio/app/*         $BINDIR/
 
 #if the config file exists in the same directory
 #copy it to the bindir
 if [ -f ./$CONFIG ]
 then
     echo using the config file here
-    rm  $BINDIR/config.cfg
     cp  ./$CONFIG $BINDIR/
 fi
 
 #give files the correct permissions
-chmod 754 $BINDIR/Radio.py
+chmod 754 $BINDIR/PatchWerk.py
 chown -R patchwerk:radio $BINDIR
 
 
