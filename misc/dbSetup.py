@@ -82,7 +82,7 @@ CREATE TABLE IF NOT EXISTS `radio` (
   PRIMARY KEY (`id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
-INSERT INTO `radio` (`id`, `status`, `loading`, `current`, `previous`) VALUES
+INSERT INTO `radio` (`id`, `status`, `loading`, `playing`, `previous`) VALUES
 (1, '', 'on', '', '');
 """)
 
