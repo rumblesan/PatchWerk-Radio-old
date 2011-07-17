@@ -6,6 +6,7 @@ import sys
 import signal
 import ConfigParser
 from DbInterface import DbInterface
+from Radio import Radio
 from optparse import OptionParser
 
 def main():

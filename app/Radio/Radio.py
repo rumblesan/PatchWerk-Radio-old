@@ -8,7 +8,7 @@ import signal
 from PatchFactory import PatchFactory
 from DbInterface import Logger
 import ConfigParser
-from Pd import Pd
+from PureData import PureData
 from time import time
 
 
