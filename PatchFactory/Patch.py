@@ -1,9 +1,12 @@
 #!/usr/bin/env python
 
 #Import Modules
+import os
 import re
 import random
+import shutil
 import ConfigParser
+from DbInterface import Patch
 
 class PatchFactory:
     #class that will deal with getting
