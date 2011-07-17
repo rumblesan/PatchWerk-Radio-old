@@ -4,7 +4,7 @@ PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 
 FOLDER=/usr/local/sbin/PatchWerk
 
-DAEMON=$FOLDER/Radio.py
+DAEMON=$FOLDER/PatchWerk.py
 CONFIG=$FOLDER/config.cfg
 
 exec 2>&1
