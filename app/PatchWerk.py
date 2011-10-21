@@ -9,18 +9,11 @@ from DbInterface import DbInterface
 from Radio import Radio
 from optparse import OptionParser
 
-def main():
-    
-    parser = OptionParser(usage='usage: %prog [-d] -c <configfile>')
-    parser.add_option('-c', action='store', dest='configfile',
-                      default='', help='Path to the config file', metavar='<configfile>')
-    parser.add_option('-d', action='store_true', dest='debug',
-                      default=False, help='Log all messages sent to PD')
-    parser.add_option('-v', action='store_true', dest='verbose',
-                      default=False, help='Print all log messages')
-    (options, args) = parser.parse_args()
-    
-    
+import daemon
+from daemon import pidlockfile
+
+def PatchWerk(options):
+
     if not os.path.isfile(options.configfile):
         print "File %s does not exist" % options.configfile
         sys.exit(1)
@@ -77,6 +70,31 @@ def main():
             
             #pause untill next patch needs to be loaded
             radio.play()
+
+def run_daemon():
+
+    context = daemon.DaemonContext()
+
+    context.working_directory = '/var/PyListener'
+
+    pidfile = pidlockfile.PIDLockFile('/var/run/PyListener/PyL.pid')
+    context.pidfile = pidfile
+    context.umask = 0o666
+
+    with context:
+        Server()
+
+def main():
+
+    parser = OptionParser(usage='usage: %prog [-d] [-v] [] -c <configfile>')
+    parser.add_option('-c', action='store', dest='configfile',
+                      default='', help='Path to the config file', metavar='<configfile>')
+    parser.add_option('-d', action='store_true', dest='debug',
+                      default=False, help='Log all messages sent to PD')
+    parser.add_option('-v', action='store_true', dest='verbose',
+                      default=False, help='Print all log messages')
+    (options, args) = parser.parse_args()
+
 
 if __name__ == "__main__":
     main()
