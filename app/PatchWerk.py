@@ -80,11 +80,44 @@ def run_daemon(config, options):
     with context:
         PatchWerk(config, options)
 
+
+def start(config, options):
+    if options.foreground == False and options.verbose == True:
+        options.verbose = False
+        print "Not running in foreground so switching verbose off"    
+    
+    if options.foreground == False:
+        PatchWerk(config, options)
+    else:
+        run_daemon(config, options)
+
+
+def stop(config, options):
+    try:
+        pidpath = config.get('daemon', 'pidpath')
+        pf  = file(pidpath,'r')
+        pid = int(pf.read().strip())
+        pf.close()
+    except IOError:
+        print "Can't read pid file %s" % pidpath
+        exit(1)
+        
+    from os import kill
+    kill(pid, signal.SIGINT)
+
+def restart(config, options):
+    stop(config, options)
+    start(config, options)
+
+
+
 def main():
 
-    parser = OptionParser(usage='usage: %prog [-d] [-v] [-f] -c <configfile>')
+    parser = OptionParser(usage='usage: %prog [-d] [-v] [-f] -c <configfile> -a <action>')
     parser.add_option('-c', '--config', action='store', dest='configfile',
-                      default='', help='Path to the config file', metavar='<configfile>')
+                      help='Path to the config file', metavar='<configfile>')
+    parser.add_option('-a', '--action', action='store', dest='action',
+                      help='Action to perform: start|stop|restart', metavar='<action>')
     parser.add_option('-d', '--debug', action='store_true', dest='debug',
                       default=False, help='Log all messages sent to PD')
     parser.add_option('-v', '--verbose', action='store_true', dest='verbose',
@@ -93,25 +126,26 @@ def main():
                       default=False, help='Print all log messages')
     (options, args) = parser.parse_args()
     
-    mandatories = ['configfile']
+    mandatories = ['configfile', 'action']
     for m in mandatories:
         if not opts.__dict__[m]:
             print "Mandatory option missing\n"
             parser.print_help()
-            exit(-1)
-    
-    if opts.foreground == False and opts.verbose == True:
-        opts.verbose = False
-        print "Not running in foreground so switching verbose off"
+            exit(1)
     
     config = ConfigParser.SafeConfigParser()
     config.read(options.configfile)
     
-    
-    if opts.foreground == False:
-        PatchWerk(config, options)
+    if opts.action == 'start':
+        start(config, options)
+    else if opts.action == 'stop':
+        stop(config, options)
+    else if opts.action == 'restart':
+        restart(config, options)
     else:
-        run_daemon(config, options)
+        print "%s is not a recognised action\n" %opts.action
+        parser.print_help()
+        exit(1)
 
 
 if __name__ == "__main__":
