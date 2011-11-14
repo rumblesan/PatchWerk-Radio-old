@@ -12,29 +12,24 @@ from optparse import OptionParser
 import daemon
 from daemon import pidlockfile
 
-def PatchWerk(options):
+def PatchWerk(config, options):
 
-    if not os.path.isfile(options.configfile):
-        print "File %s does not exist" % options.configfile
-        sys.exit(1)
-    
-    config   = ConfigParser.SafeConfigParser()
-    config.read(options.configfile)
     dbUser   = config.get('database', 'user')
     dbPasswd = config.get('database', 'password')
     dbHost   = config.get('database', 'host')
     dbName   = config.get('database', 'dbname')
     dbI      = DbInterface(dbUser, dbPasswd, dbName, dbHost)
-    del(config)
-    
+
+    log = Logger(dbI, config.verbose)
+
     #create mixing/streaming patch
-    radio = Radio(options, dbI)
+    radio = Radio(config, dbI)
     radio.pause(1)
     
     #register handler for SIGTERM
     signal.signal(signal.SIGTERM, radio.terminate)
 
-    #register handler for SIGTERM
+    #register handler for SIGINT
     signal.signal(signal.SIGINT, radio.terminate)
     
     #check that pure data is running fine
@@ -71,29 +66,52 @@ def PatchWerk(options):
             #pause untill next patch needs to be loaded
             radio.play()
 
-def run_daemon():
+def run_daemon(config, options):
 
     context = daemon.DaemonContext()
 
-    context.working_directory = '/var/PyListener'
+    context.working_directory = config.get('daemon', 'workingDir')
 
-    pidfile = pidlockfile.PIDLockFile('/var/run/PyListener/PyL.pid')
+    pidpath = config.get('daemon', 'pidpath')
+    pidfile = pidlockfile.PIDLockFile(pidpath)
     context.pidfile = pidfile
     context.umask = 0o666
 
     with context:
-        Server()
+        PatchWerk(config, options)
 
 def main():
 
-    parser = OptionParser(usage='usage: %prog [-d] [-v] [] -c <configfile>')
-    parser.add_option('-c', action='store', dest='configfile',
+    parser = OptionParser(usage='usage: %prog [-d] [-v] [-f] -c <configfile>')
+    parser.add_option('-c', '--config', action='store', dest='configfile',
                       default='', help='Path to the config file', metavar='<configfile>')
-    parser.add_option('-d', action='store_true', dest='debug',
+    parser.add_option('-d', '--debug', action='store_true', dest='debug',
                       default=False, help='Log all messages sent to PD')
-    parser.add_option('-v', action='store_true', dest='verbose',
+    parser.add_option('-v', '--verbose', action='store_true', dest='verbose',
+                      default=False, help='Print all log messages')
+    parser.add_option('-f', '--foreground', action='store_true', dest='foreground',
                       default=False, help='Print all log messages')
     (options, args) = parser.parse_args()
+    
+    mandatories = ['configfile']
+    for m in mandatories:
+        if not opts.__dict__[m]:
+            print "Mandatory option missing\n"
+            parser.print_help()
+            exit(-1)
+    
+    if opts.foreground == False and opts.verbose == True:
+        opts.verbose = False
+        print "Not running in foreground so switching verbose off"
+    
+    config = ConfigParser.SafeConfigParser()
+    config.read(options.configfile)
+    
+    
+    if opts.foreground == False:
+        PatchWerk(config, options)
+    else:
+        run_daemon(config, options)
 
 
 if __name__ == "__main__":
