@@ -6,6 +6,7 @@ import sys
 import signal
 import ConfigParser
 from DbInterface import DbInterface
+from DbInterface import Logger
 from Radio import Radio
 from optparse import OptionParser
 
@@ -20,10 +21,10 @@ def PatchWerk(config, options):
     dbName   = config.get('database', 'dbname')
     dbI      = DbInterface(dbUser, dbPasswd, dbName, dbHost)
 
-    log = Logger(dbI, config.verbose)
+    log = Logger(dbI, options.verbose)
 
     #create mixing/streaming patch
-    radio = Radio(config, dbI)
+    radio = Radio(config, options, dbI, log)
     radio.pause(1)
     
     #register handler for SIGTERM
@@ -128,7 +129,7 @@ def main():
     
     mandatories = ['configfile', 'action']
     for m in mandatories:
-        if not opts.__dict__[m]:
+        if not options.__dict__[m]:
             print "Mandatory option missing\n"
             parser.print_help()
             exit(1)
@@ -136,14 +137,14 @@ def main():
     config = ConfigParser.SafeConfigParser()
     config.read(options.configfile)
     
-    if opts.action == 'start':
+    if options.action == 'start':
         start(config, options)
-    else if opts.action == 'stop':
+    elif options.action == 'stop':
         stop(config, options)
-    else if opts.action == 'restart':
+    elif options.action == 'restart':
         restart(config, options)
     else:
-        print "%s is not a recognised action\n" %opts.action
+        print "%s is not a recognised action\n" %options.action
         parser.print_help()
         exit(1)
 
