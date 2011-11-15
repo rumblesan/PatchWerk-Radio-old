@@ -87,7 +87,7 @@ def start(config, options):
         options.verbose = False
         print "Not running in foreground so switching verbose off"    
     
-    if options.foreground == False:
+    if options.foreground == True:
         PatchWerk(config, options)
     else:
         run_daemon(config, options)
@@ -102,9 +102,8 @@ def stop(config, options):
     except IOError:
         print "Can't read pid file %s" % pidpath
         exit(1)
-        
-    from os import kill
-    kill(pid, signal.SIGINT)
+    
+    os.kill(pid, signal.SIGINT)
 
 def restart(config, options):
     stop(config, options)
