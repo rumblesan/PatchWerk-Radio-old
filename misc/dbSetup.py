@@ -3,24 +3,35 @@
 import MySQLdb
 from time import sleep
 import sys
+from optparse import OptionParser
 
-dbenv = sys.argv[1]
+parser = OptionParser()
+parser.add_option('-H', '--host', action='store', dest='host',
+                  default='localhost', help='Host the DB runs on')
+parser.add_option('-u', '--user', action='store', dest='dbuser',
+                  default='root', help='The user to connect to the database as')
+parser.add_option('-p', '--pass', action='store', dest='dbpass',
+                  help='The password of the db user')
 
-host = 'localhost'
-user = ''
-passwd = ''
+parser.add_option('-U', '--newuser', action='store', dest='newuser',
+                  help='The new database users name')
+parser.add_option('-P', '--newpass', action='store', dest='newpass',
+                  help='The new database users password')
+parser.add_option('-d', '--newdb', action='store', dest='newdb',
+                  help='The new database name')
+(opts, args) = parser.parse_args()
 
-if dbenv == "master":
-    newuser = ''
-    newpass = ''
-    newdb = ''
-else:
-    newuser = ''
-    newpass = ''
-    newdb = ''
+mandatories = ['dbpass', 'newuser', 'newpass', 'newdb']
+
+for m in mandatories:
+    if not opts.__dict__[m]:
+        print "Mandatory option missing\n"
+        parser.print_help()
+        exit(-1)
+
 
 try:
-    db = MySQLdb.connect(host, user, passwd)
+    db = MySQLdb.connect(opts.host, opts.dbuser, opts.dbpass)
 except MySQLdb.Error, e:
     print "Error %d: %s" %(e.args[0], e.args[1])
     sys.exit(1)
@@ -28,13 +39,13 @@ except MySQLdb.Error, e:
 print 'Connected'
 
 
-queries = ["CREATE DATABASE IF NOT EXISTS %s" % newdb]
+queries = ["CREATE DATABASE IF NOT EXISTS %s" % opts.newdb]
 
-queries.append("""CREATE USER '%s'@'localhost' IDENTIFIED BY '%s'""" % (newuser, newpass))
+queries.append("""CREATE USER '%s'@'localhost' IDENTIFIED BY '%s'""" % (opts.newuser, opts.newpass))
 
-queries.append("GRANT ALL PRIVILEGES ON  %s . * TO  '%s'@'localhost' WITH GRANT OPTION" % (newdb, newuser))
+queries.append("GRANT ALL PRIVILEGES ON  %s . * TO  '%s'@'localhost' WITH GRANT OPTION" % (opts.newdb, opts.newuser))
 
-queries.append("USE %s" % newdb)
+queries.append("USE %s" % opts.newdb)
 
 
 queries.append("""
