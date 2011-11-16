@@ -10,7 +10,7 @@ from optparse import OptionParser
 
 
 parser = OptionParser()
-parser.add_option('-h', '--host', action='store', dest='host',
+parser.add_option('-H', '--host', action='store', dest='host',
                   default='localhost', help='Host the DB runs on')
 parser.add_option('-u', '--user', action='store', dest='user',
                   help='The user to connect to the database as')
