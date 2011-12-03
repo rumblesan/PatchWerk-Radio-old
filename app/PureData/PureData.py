@@ -68,6 +68,7 @@ class PureData(Pd):
         start = time()
         while time() - start < pauseLength:
             self.Update()
+            sleep(0.1)
 
     def play(self):
         self.pause(self.playTime)
