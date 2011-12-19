@@ -8,19 +8,17 @@ from time import time, sleep
 
 class PureData(Pd):
     #Class that interfaces with PD process
-    def __init__(self, configFile, logger):
+    def __init__(self, config, logger):
         
         self.patch       = 'masterPatch.pd'
         
-        config           = ConfigParser.SafeConfigParser()
-        config.read(configFile)
-        
+        self.config      = config
         self.log         = logger
         
-        comPort          = config.getint('puredata', 'comPort')
+        comPort          = self.config.getint('puredata', 'comPort')
         
-        self.fadeTime    = config.getint('puredata', 'fadeTime')
-        self.playTime    = config.getint('puredata', 'playTime')
+        self.fadeTime    = self.config.getint('puredata', 'fadeTime')
+        self.playTime    = self.config.getint('puredata', 'playTime')
         
         gui              = False
         self.regWait     = False
@@ -30,7 +28,7 @@ class PureData(Pd):
         
         extras           = "-alsa"
         
-        self.masterDir   = config.get('paths', 'masterDir')
+        self.masterDir   = self.config.get('paths', 'masterDir')
                 
         path             = [self.masterDir]
         
@@ -70,6 +68,7 @@ class PureData(Pd):
         start = time()
         while time() - start < pauseLength:
             self.Update()
+            sleep(0.1)
 
     def play(self):
         self.pause(self.playTime)

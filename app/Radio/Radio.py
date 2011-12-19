@@ -14,10 +14,12 @@ from time import time
 
 class Radio():
 
-    def __init__(self, options, dbI):
+    def __init__(self, config, options, dbI, logger):
     
-        self.config      = ConfigParser.SafeConfigParser()
-        self.config.read(options.configfile)
+        self.config       = config
+        self.options      = options
+        self.dbI          = dbI
+        self.log          = logger
         
         self.patchDir     = self.config.get('paths', 'patchDir')
         self.tempDir      = self.config.get('paths', 'tempDir')
@@ -26,8 +28,6 @@ class Radio():
         self.patches      = []
         self.maxchannels  = 2
         
-        self.dbI          = dbI
-        self.log          = Logger(self.dbI, options.verbose)
         self.PatchFactory = PatchFactory(self.patchDir, self.tempDir, self.dbI, self.log)
         
         self.radioInfo   = self.dbI.get_radio_info()
@@ -43,7 +43,7 @@ class Radio():
                 sys.exit(1)
                 
         #create PD instance
-        self.pd = PureData(options.configfile, self.log)
+        self.pd = PureData(self.config, self.log)
         
         if options.debug:
             self.pd.debug(1)
