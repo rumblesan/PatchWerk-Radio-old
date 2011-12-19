@@ -3,7 +3,7 @@
 #Import Modules
 import ConfigParser
 from Pd import Pd
-from time import time
+from time import time, sleep
 
 
 class PureData(Pd):
