@@ -69,7 +69,12 @@ class Model():
                      FROM `%s`
                      WHERE `%s` = "%s"
                   """ % (self.table, self.key, keyval)
-            self.cursor.execute(sql)
+
+            try:
+                self.cursor.execute(sql)
+            except MySQLdb.Error, e:
+                print "Error with mysql writing to DB, sql was: %s" % sql
+
             row = self.cursor.fetchone()
             if row != None:
                 return True
@@ -85,7 +90,10 @@ class Model():
                  FROM `%s`
                  WHERE `%s` = "%s"
               """ % (self.table, self.key, value)
-        self.cursor.execute(sql)
+        try:
+            self.cursor.execute(sql)
+        except MySQLdb.Error, e:
+            print "Error with mysql writing to DB, sql was: %s" % sql
         row = self.cursor.fetchone()
         if row != None:
             for col, value in row.iteritems():
@@ -97,7 +105,10 @@ class Model():
                      FROM `%s`
                      WHERE `%s` = "%s"
                   """ % (self.table, key, value)
-            self.cursor.execute(sql)
+            try:
+                self.cursor.execute(sql)
+            except MySQLdb.Error, e:
+                print "Error with mysql writing to DB, sql was: %s" % sql
             row = self.cursor.fetchone()
             if row != None:
                 for col, value in row.iteritems():
@@ -113,13 +124,19 @@ class Model():
                  SET %s
                  WHERE `%s` = %i
               """ % (self.table, args, self.key, keyval)
-        self.cursor.execute(sql)
+        try:
+            self.cursor.execute(sql)
+        except MySQLdb.Error, e:
+            print "Error with mysql writing to DB, sql was: %s" % sql
 
     def delete(self):
         keyval = self.data[self.key]
         sql = """DELETE FROM `%s`
                  WHERE `%s` = %i""" % (self.table, self.key, keyval)
-        self.cursor.execute(sql)
+        try:
+            self.cursor.execute(sql)
+        except MySQLdb.Error, e:
+            print "Error with mysql writing to DB, sql was: %s" % sql
     
     def create(self):
         cols = []
@@ -134,7 +151,10 @@ class Model():
                  (%s)
                  VALUES (%s)
               """ % (self.table, colargs, valargs)
-        self.cursor.execute(sql)
+        try:
+            self.cursor.execute(sql)
+        except MySQLdb.Error, e:
+            print "Error with mysql writing to DB, sql was: %s" % sql
         self.retreive(self.cursor.lastrowid)
     
 
