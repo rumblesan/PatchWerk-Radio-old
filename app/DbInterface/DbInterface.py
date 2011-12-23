@@ -177,9 +177,10 @@ class Patch(Model):
             
     def played(self):
         playnum = self.get("plays")
+        print "number of times patch was played: %i" % playnum
         playnum += 1
         self.set("plays", playnum)
-        self.update
+        self.update()
     
 
 class Author(Model):
