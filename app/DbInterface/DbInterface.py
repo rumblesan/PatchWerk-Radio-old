@@ -221,7 +221,10 @@ class Logger():
                    (message)
                    VALUES ("%s")
                 """ % (self.table, message)
-        self.cursor.execute(query)
+        try:
+            self.cursor.execute(query)
+        except MySQLdb.Error, e:
+            print "Error with mysql writing to DB, query was: %s" % query
     
     def timeStamp(self):
         return strftime("%Y%m%d %H:%M:%S")
