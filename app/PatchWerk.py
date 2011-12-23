@@ -71,6 +71,13 @@ def run_daemon(config, options):
 
     context = daemon.DaemonContext()
 
+    working_dir = config.get('daemon', 'workingDir')
+    stderr_file = working_dir + '/stderr.log'
+    stdout_file = working_dir + '/stdout.log'
+
+    context.stderr = open(stderr_file, 'w+')
+    context.stdout = open(stdout_file, 'w+')
+
     context.working_directory = config.get('daemon', 'workingDir')
 
     pidpath = config.get('daemon', 'pidpath')
