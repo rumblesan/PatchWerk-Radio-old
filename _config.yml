@@ -19,7 +19,6 @@ author :
   twitter : rumblesan
 radio : http://patchwerk.rumblesan.com:8000/radio.ogg
 mainsite : http://rumblesan.com
-baseurl : PatchWerk-Radio
 
 # The production_url is only used when full-domain names are needed
 # such as sitemap.txt 
@@ -58,7 +57,7 @@ JB :
   #   - Only the following values are falsy: ["", null, false]
   #   - When setting BASE_PATH it must be a valid url.
   #     This means always setting the protocol (http|https) or prefixing with "/"
-  BASE_PATH : false
+  BASE_PATH : /PatchWerk-Radio
 
   # By default, the asset_path is automatically defined relative to BASE_PATH plus the enabled theme.
   # ex: [BASE_PATH]/assets/themes/[THEME-NAME]
