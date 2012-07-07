@@ -9,7 +9,7 @@ tagline: Supporting tagline
 
 PatchWerk Radio is a generative radio station that streams audio 24/7 (assuming nothing's broken). It runs on Python and PureData and all the patches and source code are freely available.
 
-You can listen in on this [stream](http://patchwerk.rumblesan.com:8000/radio.ogg)
+You can listen in on this [stream]({{site.radio}})
 
 Most of the patches have been contributed by other (much more talented) people. You can find more info about them and what they've contributed on the Authors and Patches pages respectivley.
 

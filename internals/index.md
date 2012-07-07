@@ -15,8 +15,8 @@ The following is a brief rundown of the internals and gives an explanation of wh
 Here is a diagram showing roughly what’s involved:
 
 <div class="wp-caption aligncenter" style="width: 600px">
-<a href="/images/program-diagram.png">
-<img src="/images/program-diagram.png" alt="Program Diagram" />
+<a href="{{site.JB.BASE_PATH}}/images/program-diagram.png">
+<img src="{{site.JB.BASE_PATH}}/images/program-diagram.png" alt="Program Diagram" />
 </a>
 <p class="wp-caption-text">PatchWerk Radio Program Diagram</p>
 </div>
@@ -35,8 +35,8 @@ The masterPatch is a PD patch that deals with the cross-fading, the streaming, t
 It has a number of sub sections, each of which handle these different tasks.
 
 <div class="wp-caption aligncenter" style="width: 585px">
-<a href="/images/master-patch.png">
-<img src="/images/master-patch.png" alt="The Master Patch" />
+<a href="{{site.JB.BASE_PATH}}/images/master-patch.png">
+<img src="{{site.JB.BASE_PATH}}/images/master-patch.png" alt="The Master Patch" />
 </a>
 <p class="wp-caption-text">Master Patch</p>
 </div>
@@ -46,8 +46,8 @@ It has a number of sub sections, each of which handle these different tasks.
 The python-interface sub-patch deals with the network communications between the patch and Python.
 
 <div class="wp-caption aligncenter" style="width: 585px">
-<a href="/images/python-interface.png">
-<img src="/images/python-interface.png" alt="Python Interface" />
+<a href="{{site.JB.BASE_PATH}}/images/python-interface.png">
+<img src="{{site.JB.BASE_PATH}}/images/python-interface.png" alt="Python Interface" />
 </a>
 <p class="wp-caption-text">Python Interface</p>
 </div>
@@ -57,8 +57,8 @@ The python-interface sub-patch deals with the network communications between the
 The volume-control sub-patch just does the cross fading between the audio of the loaded patches.
 
 <div class="wp-caption aligncenter" style="width: 585px">
-<a href="/images/volume-control.png">
-<img src="/images/volume-control.png" alt="Volume Control" />
+<a href="{{site.JB.BASE_PATH}}/images/volume-control.png">
+<img src="{{site.JB.BASE_PATH}}/images/volume-control.png" alt="Volume Control" />
 </a>
 <p class="wp-caption-text">Volume Control</p>
 </div>
@@ -68,8 +68,8 @@ The volume-control sub-patch just does the cross fading between the audio of the
 The patch-control section is responsible for loading and closing the chosen patches using the dynamic messaging properties of PD.
 
 <div class="wp-caption aligncenter" style="width: 585px">
-<a href="/images/patch-control.png">
-<img src="/images/patch-control.png" alt="Patch Control" />
+<a href="{{site.JB.BASE_PATH}}/images/patch-control.png">
+<img src="{{site.JB.BASE_PATH}}/images/patch-control.png" alt="Patch Control" />
 </a>
 <p class="wp-caption-text">Patch Control</p>
 </div>
@@ -79,8 +79,8 @@ The patch-control section is responsible for loading and closing the chosen patc
 The patch-interfaces are the important sub-sections. This is where the audio from the dynamically loaded patches comes into the master patch and then gets routed to the streaming section. It contains two receive~ objects for left and right channels and the logic to change where these will get their data from. It’s also where the messages to the loaded patches from the master patch are routed through.
 
 <div class="wp-caption aligncenter" style="width: 585px">
-<a href="/images/patch-interface.png">
-<img src="/images/patch-interface.png" alt="Patch Interface" />
+<a href="{{site.JB.BASE_PATH}}/images/patch-interface.png">
+<img src="{{site.JB.BASE_PATH}}/images/patch-interface.png" alt="Patch Interface" />
 </a>
 <p class="wp-caption-text">Patch Interface</p>
 </div>
@@ -91,8 +91,8 @@ The streaming sub-patch contains the oggcast~ object and all the routing to get 
 The audio from the loaded patches is routed to here, from where it is streamed to the internet at large.
 
 <div class="wp-caption aligncenter" style="width: 585px">
-<a href="/images/streaming.png">
-<img src="/images/streaming.png" alt="Streaming" />
+<a href="{{site.JB.BASE_PATH}}/images/streaming.png">
+<img src="{{site.JB.BASE_PATH}}/images/streaming.png" alt="Streaming" />
 </a>
 <p class="wp-caption-text">Streaming</p>
 </div>
@@ -110,8 +110,8 @@ There are also objects for sending the ‘patch register’ message, as well as 
 In every patch there is a switch~ object hanging off that outlet.
 
 <div class="wp-caption aligncenter" style="width: 585px">
-<a href="/images/patchComs.png">
-<img src="/images/patchComs.png" alt="patchComs Abstraction" />
+<a href="{{site.JB.BASE_PATH}}/images/patchComs.png">
+<img src="{{site.JB.BASE_PATH}}/images/patchComs.png" alt="patchComs Abstraction" />
 </a>
 <p class="wp-caption-text">patchComs Abstraction</p>
 </div>
