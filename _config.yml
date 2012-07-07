@@ -1,6 +1,5 @@
 # This is the default format. 
 # For more see: https://github.com/mojombo/jekyll/wiki/Permalinks
-permalink: /:categories/:year/:month/:day/:title 
 
 exclude: [".rvmrc", ".rbenv-version", "README.md", "Rakefile", "changelog.md"]
 auto: true
@@ -20,6 +19,7 @@ author :
   twitter : rumblesan
 radio : http://patchwerk.rumblesan.com:8000/radio.ogg
 mainsite : http://rumblesan.com
+baseurl : PatchWerk-Radio
 
 # The production_url is only used when full-domain names are needed
 # such as sitemap.txt 
