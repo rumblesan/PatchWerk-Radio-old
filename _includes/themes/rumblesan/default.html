@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en-US">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <title>{{ page.title }}</title>
+
+    <meta name="author" content="{{ site.author.name }}" />
+
+    <!-- Homepage CSS -->
+    <link rel="stylesheet" href="{{ ASSET_PATH }}/css/screen.css" type="text/css" media="screen, projection" />
+
+</head>
+
+<body class="home blog">
+
+    <div id="wrapper">
+
+        <div id="container">
+            <div id="header">
+                <h1><a href="{{ HOME_PATH }}">{{ site.title }}</a></h1>
+                <div id="head-desc">{{ site.tagline }}</div>
+            </div><!-- end header -->
+            <div id="head-nav">
+                <div class="menu-primary-navigation-container">
+                    <ul id="menu-primary-navigation" class="menu">
+                        <li class="menu-item"><a href="{{ HOME_PATH }}">Home</a></li>
+                        <li class="menu-item"><a href="{{ site.radio }}">Tune in</a></li>
+                        <li class="menu-item"><a href="{{ BASE_PATH }}/authors">Authors</a></li>
+                        <li class="menu-item"><a href="{{ BASE_PATH }}/patches">Patches</a></li>
+                        <li class="menu-item"><a href="{{ BASE_PATH }}/internals">How does it work</a></li>
+                        <li class="menu-item"><a href="{{ BASE_PATH }}/contribute">Creating Patches</a></li>
+                        <li class="menu-item"><a href="{{ BASE_PATH }}/source">Source Code</a></li>
+                        <li class="menu-item"><a href="{{ site.mainsite }}">Main Site</a></li>
+                    </ul>
+                </div>
+                <div class="clear"></div>
+            </div><!-- end head-nav -->
+
+            <div id="main-content">
+                {{ content }}
+                
+                
+            </div><!-- end main-content -->
+
+            <div id="sidebar">
+                <div class="widget">
+                    <h4>Welcome to PatchWerk Radio</h4>
+                    <div class="textwidget">PatchWerk Radio is a generative radio station that streams audio 24/7 (assuming nothing's broken). It runs on Python and PureData and all the patches and source code are freely available.</div>
+                </div>
+            </div><!-- end sidebar -->
+
+            <div class="clear"></div>
+
+            <div id="footer">
+                <div id="foot-right">
+                </div><!-- end foot-right -->
+            </div><!-- end footer -->
+
+            <div id="footer-credit">
+                Copyright &copy; 2012 <b><a href="{{ site.mainsite }}">{{ site.author.name }}</a></b>.
+                Based on the Clean Simple White Wordpress Theme by <a href="http://mazznoer.web.id/">Mazznoer</a>.
+                Powered by <a href="http://jekyllbootstrap.com/">Jekyll Bootstrap</a> and <a href="http://github.com">Github</a>.
+
+                <div id="footer-desc">Algo Radio 24/7</div>
+            </div><!-- end footer-credit -->
+
+        </div><!-- end div #container -->
+
+    </div><!-- end div #wrapper -->
+
+    {% include JB/analytics %}
+</body>
+</html>
