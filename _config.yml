@@ -17,7 +17,7 @@ author :
   email : guy@rumblesan.com
   github : rumblesan
   twitter : rumblesan
-radio : http://patchwerk.rumblesan.com:8000/radio.ogg
+radio : http://api.rumblesan.com:8000/radio.ogg
 mainsite : http://rumblesan.com
 
 # The production_url is only used when full-domain names are needed
