@@ -83,7 +83,7 @@ def run_daemon(config, options):
     pidpath = config.get('daemon', 'pidpath')
     pidfile = pidlockfile.PIDLockFile(pidpath)
     context.pidfile = pidfile
-    context.umask = 0o666
+    context.umask = 0o022
 
     with context:
         PatchWerk(config, options)
