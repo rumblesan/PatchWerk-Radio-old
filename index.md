@@ -1,6 +1,6 @@
 ---
 layout: page
-title: Hello World!
+title: Welcome to PatchWerk Radio
 tagline: Supporting tagline
 ---
 {% include JB/setup %}

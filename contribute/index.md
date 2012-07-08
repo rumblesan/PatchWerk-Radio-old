@@ -1,6 +1,6 @@
 ---
 layout: page
-title: "Index"
+title: "Creating Patches"
 description: ""
 ---
 {% include JB/setup %}
